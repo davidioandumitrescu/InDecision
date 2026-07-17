@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Supabase
 
 struct ExperienceCreateView: View {
     
@@ -159,7 +160,10 @@ struct ExperienceCreateView: View {
             ToolbarItem(placement: .topBarTrailing) {
                 Button(action: {
                     if isFormValid {
-                        saveEvent()
+                        Task{
+                            await saveEvent()
+
+                        }
                     } else {
                         validationMessage = getValidationMessage()
                         showValidationError = true
@@ -172,7 +176,7 @@ struct ExperienceCreateView: View {
         }
     }
     
-    private func saveEvent() {
+    private func saveEvent() async {
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
         formatter.timeStyle = .none
@@ -200,8 +204,26 @@ struct ExperienceCreateView: View {
             contactEmail: contactInfo
         )
         
+        await addEvent(event: newEvent)
+        
         eventManager.createEvent(newEvent)
         eventManager.formResetTrigger = UUID()
         eventManager.selectedTab = 0
     }
 }
+
+
+private func addEvent(event: DetailedEvent) async {
+    do {
+        try await SupabaseManager.shared.client
+            .from("events")
+            .insert(event)
+            .execute()
+
+        print("✅ Event uploaded")
+
+    } catch {
+        print("❌ Upload failed:", error)
+    }
+}
+
