@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-struct ExperienceView: View {
+struct ExperienceListView: View {
     @EnvironmentObject var eventManager: EventManager
         @State private var searchText = ""
         @State private var selectedFilter = 0 // 0: All, 1: Proposed, 2: Solid
@@ -130,7 +130,9 @@ struct ExperienceView: View {
                     .padding(.bottom, 20)
                 }
                 //.navigationTitle("Experience")
-               
+                .task {
+                    await eventManager.loadEvents()
+                }
             }
         }
     }
