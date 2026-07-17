@@ -25,7 +25,7 @@ struct ExperienceSavedView: View {
                     
                     Spacer()
                     
-                    NavigationLink(destination: ProfileView()) {
+                    NavigationLink(destination: ProfileDestinationView()) {
                             Image(systemName: "person.crop.circle.fill")
                                 .font(.system(size: 44))
                                 .frame(width: 50, height: 50)

@@ -10,6 +10,7 @@ import SwiftUI
 @main
 struct InDecisionApp: App {
     @StateObject private var eventManager = EventManager()
+    @StateObject private var authManager = AuthManager()
     
     @State private var showDiscardAlert = false
     @State private var pendingTab = 0
@@ -73,6 +74,16 @@ struct InDecisionApp: App {
                     Text("If you leave this tab, all your entered details will be lost.")
                 }
                 .environmentObject(eventManager)
+            }
+            .environmentObject(eventManager)
+            .environmentObject(authManager)
+            .task {
+                await authManager.refreshSession()
+            }
+            .onOpenURL { url in
+                Task {
+                    await authManager.handleOAuthCallback(url: url)
+                }
             }
         }
     }

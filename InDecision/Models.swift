@@ -34,3 +34,9 @@ struct User: Identifiable, Codable {
     var phonenumber: String
     var gender: String
 }
+
+struct Profile: Codable {
+    let id: UUID
+    let username: String
+    let full_name: String?
+}
