@@ -2,10 +2,11 @@
 //  Models.swift
 //  InDecision
 //
-//  Created by Tracy on 17/7/2026.
+
+//  Created by David-Ioan Dumitrescu on 16/7/2026.
 //
 
-import SwiftUI
+import Foundation
 
 enum EventStatus: String, CaseIterable, Codable {
     case solid = "Solid"
@@ -14,7 +15,8 @@ enum EventStatus: String, CaseIterable, Codable {
 
 // The main Event structure
 struct DetailedEvent: Identifiable, Codable {
-    var id: String = UUID().uuidString
+    var id: UUID = UUID()
+    var createdBy: UUID
     var title: String
     var status: EventStatus
     var hostName: String
@@ -25,21 +27,33 @@ struct DetailedEvent: Identifiable, Codable {
     var experienceType: String
     var capacity: Double
     var contactEmail: String
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case createdBy = "created_by"
+        case title
+        case status
+        case hostName
+        case location
+        case date
+        case time
+        case description
+        case experienceType
+        case capacity
+        case contactEmail
+    }
 }
 
-
-// The Users structure
-
-struct User: Identifiable, Hashable{
-    let id = UUID()
+struct User: Identifiable, Codable {
+    var id: String = UUID().uuidString
     var name: String
-    var surname: String
-    var bio: String
-    var favouriteColor: Color = .blue
     var email: String
-    var password: String
-    var isLoggedIn: Bool = false
-    var isLoggedOut: Bool { !isLoggedIn }
+    var phonenumber: String
+    var gender: String
 }
 
-
+struct Profile: Identifiable, Codable {
+    let id: UUID
+    let username: String
+    let full_name: String?
+}
