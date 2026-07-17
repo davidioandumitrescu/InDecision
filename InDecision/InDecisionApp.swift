@@ -29,7 +29,7 @@ struct InDecisionApp: App {
                     }
                 }
             )){
-                    ExperienceView()
+                    ExperienceListView()
                     .tabItem {
                         Label("Experience", systemImage: "person.3.fill")
                     }

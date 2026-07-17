@@ -204,9 +204,8 @@ struct ExperienceCreateView: View {
             contactEmail: contactInfo
         )
         
-        await addEvent(event: newEvent)
         
-        eventManager.createEvent(newEvent)
+        await eventManager.createEvent(newEvent)
         eventManager.formResetTrigger = UUID()
         eventManager.selectedTab = 0
     }
