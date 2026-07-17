@@ -11,6 +11,7 @@ import Supabase
 struct ExperienceCreateView: View {
     
     @EnvironmentObject var eventManager: EventManager
+    @EnvironmentObject var authManager: AuthManager
     
     // Form State
     @State private var title = ""
@@ -32,6 +33,7 @@ struct ExperienceCreateView: View {
     let experienceTypes = ["Teach", "Demonstrate", "StoryTell", "Build", "Mentor", "Explore", "Discuss", "Practice"]
     
     var isFormValid: Bool {
+        if authManager.userID == nil { return false }
         if title.trimmingCharacters(in: .whitespaces).isEmpty { return false }
         if description.trimmingCharacters(in: .whitespaces).isEmpty { return false }
         
@@ -46,6 +48,7 @@ struct ExperienceCreateView: View {
     private func getValidationMessage() -> String {
         var missingFields: [String] = []
         
+        if authManager.userID == nil { missingFields.append("Signed-in account") }
         if title.trimmingCharacters(in: .whitespaces).isEmpty { missingFields.append("Title") }
         if description.trimmingCharacters(in: .whitespaces).isEmpty { missingFields.append("Description") }
         
@@ -188,26 +191,39 @@ struct ExperienceCreateView: View {
         let startTString = formatter.string(from: startTime)
         let endTString = formatter.string(from: endTime)
         
+        guard let creatorID = authManager.userID else {
+            validationMessage = "You need to sign in before creating an event."
+            showValidationError = true
+            return
+        }
+        
         let finalDate = isSolid ? startDString : "\(startDString) - \(endDString)"
         let finalTime = isSolid ? startTString : "\(startTString) - \(endTString)"
+        let hostName = authManager.profile?.full_name ?? authManager.profile?.username ?? "Me"
+        let contactEmail = contactInfo.isEmpty ? authManager.userEmail ?? "" : contactInfo
         
         let newEvent = DetailedEvent(
+            createdBy: creatorID,
             title: title,
             status: isSolid ? .solid : .proposed,
-            hostName: "Me",
+            hostName: hostName,
             location: location.isEmpty ? "TBD" : location,
             date: finalDate,
             time: finalTime,
             description: description,
             experienceType: selectedExperience,
             capacity: capacity,
-            contactEmail: contactInfo
+            contactEmail: contactEmail
         )
         
-        
-        await eventManager.createEvent(newEvent)
-        eventManager.formResetTrigger = UUID()
-        eventManager.selectedTab = 0
+        let didCreateEvent = await eventManager.createEvent(newEvent)
+        if didCreateEvent {
+            eventManager.formResetTrigger = UUID()
+            eventManager.selectedTab = 0
+        } else {
+            validationMessage = eventManager.errorMessage.isEmpty ? "Event could not be created." : eventManager.errorMessage
+            showValidationError = true
+        }
     }
 }
 
