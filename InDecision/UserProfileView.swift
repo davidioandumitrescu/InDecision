@@ -140,7 +140,7 @@ struct UserProfileView: View {
                                 HStack{
                                     
                                     HStack(spacing:10){
-                                            NavigationLink(destination:ExperienceDetailView()){
+                                        NavigationLink(destination:ExperienceDetailView(event: <#DetailedEvent#>)){
                                                 // event title
                                                 Text("Spice Sharing")
                                                     .fontWeight(.bold)
@@ -194,7 +194,7 @@ struct UserProfileView: View {
 //                    }){
 //                        Image(systemName:"arrowshape.backward.circle.fill")
 //                    }
-                    NavigationLink(destination: ExperienceDetailView()) {
+                    NavigationLink(destination: ExperienceDetailView(event: <#DetailedEvent#>)) {
                         Image(systemName:"arrowshape.backward.circle.fill")
                             .foregroundColor(.black)
                             .padding(10)
