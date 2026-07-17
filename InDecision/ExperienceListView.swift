@@ -77,9 +77,10 @@ struct ExperienceListView: View {
                                     .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
                             }
                             //Profile Button
-                            NavigationLink(destination: ProfileView()) {
+                            NavigationLink(destination: ProfileDestinationView()) {
                                     Image(systemName: "person.crop.circle.fill")
                                         .font(.system(size: 44))
+                                        .frame(width: 50, height: 50)
                                         .foregroundColor(.black)
                                         .background(Color.white)
                                         .clipShape(Circle())

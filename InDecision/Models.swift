@@ -15,6 +15,7 @@ enum EventStatus: String, CaseIterable, Codable {
 // The main Event structure
 struct DetailedEvent: Identifiable, Codable {
     var id: UUID = UUID()
+    var createdBy: UUID
     var title: String
     var status: EventStatus
     var hostName: String
@@ -25,6 +26,21 @@ struct DetailedEvent: Identifiable, Codable {
     var experienceType: String
     var capacity: Double
     var contactEmail: String
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case createdBy = "created_by"
+        case title
+        case status
+        case hostName
+        case location
+        case date
+        case time
+        case description
+        case experienceType
+        case capacity
+        case contactEmail
+    }
 }
 
 struct User: Identifiable, Codable {
@@ -33,4 +49,10 @@ struct User: Identifiable, Codable {
     var email: String
     var phonenumber: String
     var gender: String
+}
+
+struct Profile: Identifiable, Codable {
+    let id: UUID
+    let username: String
+    let full_name: String?
 }

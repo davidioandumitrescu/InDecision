@@ -5,16 +5,17 @@
 //  Created by David-Ioan Dumitrescu on 16/7/2026.
 //
 
-import Foundation
-import SwiftUI
 import Combine
+import Foundation
 import Supabase
+import SwiftUI
 
 @MainActor
 class EventManager: ObservableObject {
     
     @Published var events: [DetailedEvent] = []
     @Published var savedEventIDs: Set<UUID> = []
+    @Published var errorMessage = ""
     
     @Published var selectedTab: Int = 0
     @Published var formResetTrigger = UUID()
@@ -32,10 +33,12 @@ class EventManager: ObservableObject {
                 .value
             
             self.events = fetchedEvents
+            errorMessage = ""
             
             print("✅ Loaded \(fetchedEvents.count) events")
             
         } catch {
+            errorMessage = error.localizedDescription
             print("❌ Failed to load events:", error)
         }
     }
@@ -43,19 +46,24 @@ class EventManager: ObservableObject {
     
     // MARK: - Create Event
     
-    func createEvent(_ event: DetailedEvent) async {
+    @discardableResult
+    func createEvent(_ event: DetailedEvent) async -> Bool {
         do {
             try await SupabaseManager.shared.client
                 .from("events")
                 .insert(event)
                 .execute()
             
+            errorMessage = ""
             print("✅ Event created")
             
             await loadEvents()
+            return true
             
         } catch {
+            errorMessage = error.localizedDescription
             print("❌ Failed to create event:", error)
+            return false
         }
     }
     
