@@ -20,10 +20,8 @@ struct ExperienceSavedView: View {
             VStack(alignment: .leading) {
                 HStack {
                     Text("My Experience")
-                        .font(.title2)
-                        .bold()
-                        .padding(.horizontal)
-                        .padding(.top)
+                        .font(.title)
+                        .bold() 
                     
                     Spacer()
                     
@@ -37,6 +35,8 @@ struct ExperienceSavedView: View {
                         }
                     
                 }
+                .padding(.horizontal)
+                .padding(.top, 8)
                 
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 16) {
