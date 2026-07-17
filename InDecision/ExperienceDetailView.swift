@@ -10,6 +10,7 @@ import SwiftUI
 struct ExperienceDetailView: View {
     let event: DetailedEvent
     @EnvironmentObject var eventManager: EventManager
+    @EnvironmentObject var authManager: AuthManager
     @Environment(\.dismiss) var dismiss
     
     var body: some View {
@@ -71,7 +72,11 @@ struct ExperienceDetailView: View {
                         .padding(.vertical, 8)
                         .background(Color(.systemGray6)) // Light gray background
                         .clipShape(Capsule())
-                    Button(action: { eventManager.toggleSave(for: event.id) }) {
+                    Button {
+                        Task {
+                            await eventManager.toggleSave(for: event.id, userID: authManager.userID)
+                        }
+                    } label: {
                         Image(systemName: eventManager.isSaved(eventId: event.id) ? "heart.fill" : "heart")
                             .font(.system(size: 24))
                             .foregroundColor(eventManager.isSaved(eventId: event.id) ? .red : .blue)

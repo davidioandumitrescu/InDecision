@@ -9,6 +9,7 @@ import SwiftUI
 
 struct ExperienceListView: View {
     @EnvironmentObject var eventManager: EventManager
+    @EnvironmentObject var authManager: AuthManager
         @State private var searchText = ""
         @State private var selectedFilter = 0 // 0: All, 1: Proposed, 2: Solid
         @State private var typeFilter: String = "All"
@@ -132,7 +133,9 @@ struct ExperienceListView: View {
                 }
                 //.navigationTitle("Experience")
                 .task {
+                    await authManager.refreshSession()
                     await eventManager.loadEvents()
+                    await eventManager.loadSavedEvents(for: authManager.userID)
                 }
             }
         }
@@ -140,6 +143,7 @@ struct ExperienceListView: View {
     struct EventCardView: View {
         let event: DetailedEvent
         @EnvironmentObject var eventManager: EventManager
+        @EnvironmentObject var authManager: AuthManager
         
         var body: some View {
             VStack(alignment: .leading, spacing: 12) {
@@ -171,7 +175,9 @@ struct ExperienceListView: View {
                         .padding(8)
                         .contentShape(Rectangle())
                         .onTapGesture {
-                            eventManager.toggleSave(for: event.id)
+                            Task {
+                                await eventManager.toggleSave(for: event.id, userID: authManager.userID)
+                            }
                         }
                 }
             }
