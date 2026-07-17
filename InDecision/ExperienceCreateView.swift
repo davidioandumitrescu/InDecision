@@ -154,7 +154,7 @@ struct ExperienceCreateView: View {
                 }
                 .foregroundColor(.red)
                 .opacity(eventManager.hasUnsavedChanges ? 1 : 0.2)
-                .disabled(!eventManager.hasUnsavedChanges)
+                //.disabled(!eventManager.hasUnsavedChanges)
             }
             
             ToolbarItem(placement: .topBarTrailing) {

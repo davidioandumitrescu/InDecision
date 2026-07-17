@@ -22,8 +22,8 @@ struct ExperienceDetailView: View {
                     Button(action: { dismiss() }) {
                         Image(systemName: "chevron.left")
                             .font(.system(size: 20, weight: .medium))
+                            .frame(width: 50, height: 50)
                             .foregroundColor(.black)
-                            .frame(width: 44, height: 44) // Nice large touch target
                             .background(Color.white)
                             .clipShape(Circle())
                             .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
@@ -42,17 +42,17 @@ struct ExperienceDetailView: View {
                     // 3. Perfect Profile Button
                     NavigationLink(destination: ProfileDestinationView()) {
                         Image(systemName: "person.crop.circle.fill")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 38, height: 38)
+                            .font(.system(size: 44))
+                            .frame(width: 50, height: 50)
                             .foregroundColor(.black)
                             .background(Color.white)
                             .clipShape(Circle())
-                            .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
+                            .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
                     }
                 }
                 .padding(.horizontal)
                 .padding(.bottom, 8)
+                .padding(.top, 8)
                 
                 Rectangle().fill(Color.gray.opacity(0.2)).frame(height: 240)
                     .overlay(Image(systemName: "photo").font(.largeTitle).foregroundColor(.gray))
@@ -118,7 +118,7 @@ struct ExperienceDetailView: View {
                 }.padding(.horizontal)
                 
                 Spacer()
-            }.padding(.top, 16)
+            }
         }
         .toolbar(.hidden, for: .navigationBar)
     }

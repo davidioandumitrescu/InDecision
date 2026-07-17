@@ -20,16 +20,15 @@ struct ExperienceSavedView: View {
             VStack(alignment: .leading) {
                 HStack {
                     Text("My Experience")
-                        .font(.title2)
-                        .bold()
-                        .padding(.horizontal)
-                        .padding(.top)
+                        .font(.title)
+                        .bold() 
                     
                     Spacer()
                     
                     NavigationLink(destination: ProfileDestinationView()) {
                             Image(systemName: "person.crop.circle.fill")
                                 .font(.system(size: 44))
+                                .frame(width: 50, height: 50)
                                 .foregroundColor(.black)
                                 .background(Color.white)
                                 .clipShape(Circle())
@@ -37,6 +36,8 @@ struct ExperienceSavedView: View {
                         }
                     
                 }
+                .padding(.horizontal)
+                .padding(.top, 8)
                 
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 16) {
