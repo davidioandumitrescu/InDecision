@@ -18,17 +18,29 @@ struct ExperienceSavedView: View {
         
         var body: some View {
             VStack(alignment: .leading) {
-                Text("My Experience")
-                    .font(.title2)
-                    .bold()
-                    .padding(.horizontal)
-                    .padding(.top)
+                HStack {
+                    Text("My Experience")
+                        .font(.title2)
+                        .bold()
+                        .padding(.horizontal)
+                        .padding(.top)
+                    
+                    Spacer()
+                    
+                    NavigationLink(destination: ProfileView()) {
+                            Image(systemName: "person.crop.circle.fill")
+                                .font(.system(size: 44))
+                                .foregroundColor(.black)
+                                .background(Color.white)
+                                .clipShape(Circle())
+                                .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
+                        }
+                    
+                }
                 
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 16) {
                         ForEach(savedEvents) { event in
-                            
-                            // FIX: Wrapped the bubble in a NavigationLink
                             NavigationLink(destination: ExperienceDetailView(event: event)) {
                                 VStack {
                                     Circle()
@@ -40,16 +52,13 @@ struct ExperienceSavedView: View {
                                         .font(.caption)
                                         .lineLimit(1)
                                         .frame(width: 70)
-                                        .foregroundColor(.primary) // Stops the text from turning standard link-blue
-                                }
+                                        .foregroundColor(.primary)                                }
                             }
                             
                         }
                     }
                     .padding(.horizontal)
                 }
-                
-                // FIX: This Spacer pushes the VStack to the absolute top of the screen
                 Spacer()
             }
         }

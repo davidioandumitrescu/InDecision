@@ -74,9 +74,17 @@ struct ExperienceView: View {
                                     .frame(width: 50, height: 50)
                                     .background(Color.white)
                                     .clipShape(Circle())
-                                    // Adds a soft shadow to match the elevated look in the screenshot
                                     .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
                             }
+                            //Profile Button
+                            NavigationLink(destination: ProfileView()) {
+                                    Image(systemName: "person.crop.circle.fill")
+                                        .font(.system(size: 44))
+                                        .foregroundColor(.black)
+                                        .background(Color.white)
+                                        .clipShape(Circle())
+                                        .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
+                                }
                         }
                         .padding(.horizontal)
                         .padding(.top, 8)

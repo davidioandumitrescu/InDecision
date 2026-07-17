@@ -26,3 +26,11 @@ struct DetailedEvent: Identifiable, Codable {
     var capacity: Double
     var contactEmail: String
 }
+
+struct User: Identifiable, Codable {
+    var id: String = UUID().uuidString
+    var name: String
+    var email: String
+    var phonenumber: String
+    var gender: String
+}
