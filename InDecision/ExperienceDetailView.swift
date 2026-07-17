@@ -40,7 +40,7 @@ struct ExperienceDetailView: View {
                     Spacer()
                     
                     // 3. Perfect Profile Button
-                    NavigationLink(destination: ProfileView()) {
+                    NavigationLink(destination: ProfileDestinationView()) {
                         Image(systemName: "person.crop.circle.fill")
                             .resizable()
                             .scaledToFit()
