@@ -28,6 +28,7 @@ struct ExperienceSavedView: View {
                     NavigationLink(destination: ProfileView()) {
                             Image(systemName: "person.crop.circle.fill")
                                 .font(.system(size: 44))
+                                .frame(width: 50, height: 50)
                                 .foregroundColor(.black)
                                 .background(Color.white)
                                 .clipShape(Circle())

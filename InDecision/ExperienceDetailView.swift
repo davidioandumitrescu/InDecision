@@ -22,8 +22,8 @@ struct ExperienceDetailView: View {
                     Button(action: { dismiss() }) {
                         Image(systemName: "chevron.left")
                             .font(.system(size: 20, weight: .medium))
+                            .frame(width: 50, height: 50)
                             .foregroundColor(.black)
-                            .frame(width: 50, height: 50) // Nice large touch target
                             .background(Color.white)
                             .clipShape(Circle())
                             .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
@@ -43,6 +43,7 @@ struct ExperienceDetailView: View {
                     NavigationLink(destination: ProfileView()) {
                             Image(systemName: "person.crop.circle.fill")
                                 .font(.system(size: 44))
+                                .frame(width: 50, height: 50)
                                 .foregroundColor(.black)
                                 .background(Color.white)
                                 .clipShape(Circle())
@@ -51,6 +52,7 @@ struct ExperienceDetailView: View {
                 }
                 .padding(.horizontal)
                 .padding(.bottom, 8)
+                .padding(.top, 8)
                 
                 Rectangle().fill(Color.gray.opacity(0.2)).frame(height: 240)
                     .overlay(Image(systemName: "photo").font(.largeTitle).foregroundColor(.gray))
@@ -116,7 +118,7 @@ struct ExperienceDetailView: View {
                 }.padding(.horizontal)
                 
                 Spacer()
-            }.padding(.top, 8)
+            }
         }
         .toolbar(.hidden, for: .navigationBar)
     }
