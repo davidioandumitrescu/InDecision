@@ -25,6 +25,7 @@ struct DetailedEvent: Identifiable, Codable {
     var experienceType: String
     var capacity: Double
     var contactEmail: String
+    var imgUrl: String? = nil
 }
 
 struct User: Identifiable, Codable {
