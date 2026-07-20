@@ -191,24 +191,29 @@ struct ExperienceDetailView: View {
     // MARK: - Subsections
     
     private var headerBar: some View {
-        HStack {
-            HStack(spacing: 8) {
-                Image(systemName: "person.3.fill")
-                    .font(.system(size: 35))
+            HStack {
+                // 1. The Custom Back Button
+                Button(action: {
+                    dismiss() // This safely takes you back to the list!
+                }) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 22, weight: .bold))
+                    }
                     .foregroundColor(.white)
-                Text("Bloop")
-                    .font(.system(size: 30, weight: .bold))
-                    .foregroundColor(.white)
+                }
+                
+                Spacer()
+                
+                // 2. The Profile Button
+                NavigationLink(destination: ProfileView()) {
+                    Image(systemName: "person.crop.circle.fill")
+                        .font(.system(size: 44))
+                        .foregroundColor(.white)
+                }
             }
-            Spacer()
-            Button(action: { dismiss() }) {
-                Image(systemName: "person.crop.circle.fill")
-                    .font(.system(size: 50))
-                    .foregroundColor(.white)
-            }
+            .padding(.top, 10)
         }
-        .padding(.top, 10)
-    }
     
     private var tagsSection: some View {
         HStack(spacing: 10) {
@@ -285,7 +290,7 @@ struct ExperienceDetailView: View {
                 // Placeholder loop - will show real data once eventManager.getAttendees is ready
                 ForEach(attendees) { user in
                     Circle()
-                        .fill(Color.gray.opacity(0.4))
+                        .fill(Color.gray)
                         .frame(width: 54, height: 54)
                 }
             }

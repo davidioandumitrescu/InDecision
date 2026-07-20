@@ -240,11 +240,7 @@ struct ExperienceListView: View {
                             NavigationLink(destination: ProfileView()) {
                                 Image(systemName: "person.crop.circle.fill")
                                     .font(.system(size: 44))
-                                    .foregroundColor(.black)
-                                    .frame(width: 50, height: 50)
-                                    .background(Color.white.opacity(0.9))
-                                    .clipShape(Circle())
-                                    .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
+                                    .foregroundColor(.white)
                             }
                         }
                         .padding(.horizontal)

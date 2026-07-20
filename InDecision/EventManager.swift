@@ -53,7 +53,7 @@ class EventManager: ObservableObject {
                 .from("events")
                 .insert(event)
                 .execute()
-            
+            //add the host as an atendee if this works
             errorMessage = ""
             print("✅ Event created")
             
