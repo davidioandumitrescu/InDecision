@@ -12,7 +12,7 @@ struct DetailedEvent: Identifiable, Codable {
     var id = UUID()
     
     // MARK: - Host Info
-    var hostName: String
+    var hostName: String = "Host"
     var location: String
     var experienceType: String
     var created_by: UUID? = nil
@@ -25,16 +25,13 @@ struct DetailedEvent: Identifiable, Codable {
     var selectedDays: [String]
     var time: String
     
-    // MARK: - Counters
-    var likeCount: Int
-    var joinedCount: Int
-    
-    // MARK: - Attendance Tracking
-    var joined_user_ids: [UUID] = []
-    
     // MARK: - Status
     /// false = Proposed (0 in DB), true = Solid (1 in DB)
     var isSolid: Bool = false
+    
+    // MARK: - Counters
+    var likeCount: Int
+    var joinedCount: Int
     
     // MARK: - Computed Logic
     

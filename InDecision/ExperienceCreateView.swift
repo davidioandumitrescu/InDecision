@@ -14,33 +14,30 @@ struct ExperienceCreateView: View {
     @EnvironmentObject var authManager: AuthManager
     
     // Form State
-    @State private var title = ""
-    @State private var isSolid = true
-    @State private var location = ""
-    @State private var startDate = Date()
-    @State private var endDate = Date()
-    @State private var startTime = Date()
-    @State private var endTime = Date()
-    @State private var description = ""
-    @State private var contactInfo = ""
-    @State private var selectedExperience: String = "Teach"
-    @State private var capacity: Double = 0
     
+    @State  var activity: String = ""
+    @State  var connectionTarget: String = ""
+    @State  var minPeople: Int = 0
+    @State  var maxPeople: Int = 0
+    @State  var selectedDays: [String] = []
+    @State  var time: String = ""
+    @State  var isSolid: Bool = false
+    @State  var location: String = ""
+    @State  var experienceType: String = ""
+    @State  var description: String = ""
     
-    @State private var showValidationError = false
-    @State private var validationMessage = ""
+    @State  var showValidationError = false
+    @State  var validationMessage = ""
     
     let experienceTypes = ["Teach", "Demonstrate", "StoryTell", "Build", "Mentor", "Explore", "Discuss", "Practice"]
     
     var isFormValid: Bool {
         if authManager.userID == nil { return false }
-        if title.trimmingCharacters(in: .whitespaces).isEmpty { return false }
+        if activity.trimmingCharacters(in: .whitespaces).isEmpty { return false }
         if description.trimmingCharacters(in: .whitespaces).isEmpty { return false }
         
         if isSolid {
             if location.trimmingCharacters(in: .whitespaces).isEmpty { return false }
-        } else {
-            if contactInfo.trimmingCharacters(in: .whitespaces).isEmpty { return false }
         }
         return true
     }
@@ -49,38 +46,33 @@ struct ExperienceCreateView: View {
         var missingFields: [String] = []
         
         if authManager.userID == nil { missingFields.append("Signed-in account") }
-        if title.trimmingCharacters(in: .whitespaces).isEmpty { missingFields.append("Title") }
+        if activity.trimmingCharacters(in: .whitespaces).isEmpty { missingFields.append("Title") }
         if description.trimmingCharacters(in: .whitespaces).isEmpty { missingFields.append("Description") }
         
         if isSolid && location.trimmingCharacters(in: .whitespaces).isEmpty {
             missingFields.append("Location")
-        }
-        if !isSolid && contactInfo.trimmingCharacters(in: .whitespaces).isEmpty {
-            missingFields.append("Contact Info")
         }
         
         return "Please fill out the following required fields: \n\n• " + missingFields.joined(separator: "\n• ")
     }
     
     private func checkUnsavedChanges() {
-        let isDirty = !title.isEmpty || !location.isEmpty || !description.isEmpty || !contactInfo.isEmpty || capacity > 0
+        let isDirty = !activity.isEmpty || !location.isEmpty || !description.isEmpty || maxPeople > 0
         if eventManager.hasUnsavedChanges != isDirty {
             eventManager.hasUnsavedChanges = isDirty
         }
     }
     
     private func resetForm() {
-        title = ""
+        activity = ""
         isSolid = true
         location = ""
-        startDate = Date()
-        endDate = Date()
-        startTime = Date()
-        endTime = Date()
+        selectedDays = []
+        time = ""
         description = ""
-        contactInfo = ""
-        selectedExperience = "Teach"
-        capacity = 0
+        experienceType = "Teach"
+        minPeople = 0
+        maxPeople = 5
         eventManager.hasUnsavedChanges = false
     }
     
@@ -100,8 +92,8 @@ struct ExperienceCreateView: View {
                 }**/
                 
                 Section(header: Text("What are you looking to do?")) {
-                    TextField("Title (Required)", text: $title)
-                        .onChange(of: title) { checkUnsavedChanges() }
+                    TextField("Title (Required)", text: $activity)
+                        .onChange(of: activity) { checkUnsavedChanges() }
 
                 }
                 Section(header: Text("Who are you looking to connect with?")) {
@@ -119,12 +111,10 @@ struct ExperienceCreateView: View {
                     .padding()
 
                 }
-                    DatePicker("Date", selection: $startDate, displayedComponents: .date)
-                    DatePicker("Time", selection: $startTime, displayedComponents: .hourAndMinute)
                 
                 
                 Section(header: Text("Experience Type")) {
-                    Picker("Type", selection: $selectedExperience) {
+                    Picker("Type", selection: $experienceType) {
                         ForEach(experienceTypes, id: \.self) { type in
                             Text(type).tag(type)
                         }
@@ -136,15 +126,7 @@ struct ExperienceCreateView: View {
                         .onChange(of: description) { checkUnsavedChanges() }
                 }
                 
-                Section(header: Text(capacity == 0 ? "Capacity: Unlimited" : "Capacity: \(Int(capacity)) people")) {
-                    Slider(value: $capacity, in: 0...20, step: 1)
-                        .onChange(of: capacity) { checkUnsavedChanges() }
-                }
                 
-                Section(header: Text("Contact Info")) {
-                    TextField(isSolid ? "Email or Phone (Optional)" : "Email or Phone (Required)", text: $contactInfo)
-                        .onChange(of: contactInfo) { checkUnsavedChanges() }
-                }
             }
             .scrollContentBackground(.hidden)
             .navigationTitle("Create Proposal")
@@ -196,13 +178,13 @@ struct ExperienceCreateView: View {
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
         formatter.timeStyle = .none
-        let startDString = formatter.string(from: startDate)
-        let endDString = formatter.string(from: endDate)
+        //let startDString = formatter.string(from: startDate)
+        //let endDString = formatter.string(from: endDate)
         
         formatter.dateStyle = .none
         formatter.timeStyle = .short
-        let startTString = formatter.string(from: startTime)
-        let endTString = formatter.string(from: endTime)
+        //let startTString = formatter.string(from: startTime)
+        //let endTString = formatter.string(from: endTime)
         
         guard let creatorID = authManager.userID else {
             validationMessage = "You need to sign in before creating an event."
@@ -210,24 +192,12 @@ struct ExperienceCreateView: View {
             return
         }
         
-        let finalDate = isSolid ? startDString : "\(startDString) - \(endDString)"
-        let finalTime = isSolid ? startTString : "\(startTString) - \(endTString)"
+        //let finalDate = isSolid ? startDString : "\(startDString) - \(endDString)"
+        //let finalTime = isSolid ? startTString : "\(startTString) - \(endTString)"
         let hostName = authManager.profile?.full_name ?? authManager.profile?.username ?? "Me"
-        let contactEmail = contactInfo.isEmpty ? authManager.userEmail ?? "" : contactInfo
+        //let contactEmail = contactInfo.isEmpty ? authManager.userEmail ?? "" : contactInfo
         
-        let newEvent = DetailedEvent(
-            createdBy: creatorID,
-            title: title,
-            status: isSolid ? .solid : .proposed,
-            hostName: hostName,
-            location: location.isEmpty ? "TBD" : location,
-            date: finalDate,
-            time: finalTime,
-            description: description,
-            experienceType: selectedExperience,
-            capacity: capacity,
-            contactEmail: contactEmail
-        )
+        let newEvent = DetailedEvent(location: location, experienceType: experienceType, activity: activity, connectionTarget: connectionTarget, minPeople: minPeople, maxPeople: maxPeople, selectedDays: [], time: time, likeCount: 0, joinedCount: 0)
         
         let didCreateEvent = await eventManager.createEvent(newEvent)
         if didCreateEvent {
