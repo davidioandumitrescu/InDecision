@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct UserProfileView: View {
-    // @EnvironmentObject var eventManager: EventManager
+     @EnvironmentObject var eventManager: EventManager
     @State private var currentUser = User(name: "tracy", email: "abc", phonenumber: "edf", gender: "female")
     
 
@@ -140,7 +140,8 @@ struct UserProfileView: View {
                                 HStack{
                                     
                                     HStack(spacing:10){
-                                        NavigationLink(destination:ExperienceDetailView(event: <#DetailedEvent#>)){
+                                        //ExperienceDetailView(event: Event())
+                                        NavigationLink(destination:Text("need actual event details")){
                                                 // event title
                                                 Text("Spice Sharing")
                                                     .fontWeight(.bold)
@@ -194,7 +195,8 @@ struct UserProfileView: View {
 //                    }){
 //                        Image(systemName:"arrowshape.backward.circle.fill")
 //                    }
-                    NavigationLink(destination: ExperienceDetailView(event: <#DetailedEvent#>)) {
+                    //ExperienceDetailView(event: <#DetailedEvent#>)
+                    NavigationLink(destination: Text("need actual events joined")) {
                         Image(systemName:"arrowshape.backward.circle.fill")
                             .foregroundColor(.black)
                             .padding(10)
