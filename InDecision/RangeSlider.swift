@@ -30,7 +30,7 @@ struct RangeSlider: View {
                     .frame(height: 4)
 
                 Capsule()
-                    .fill(.blue)
+                    .fill(.indigo)
                     .frame(width: upperX - lowerX, height: 4)
                     .offset(x: lowerX)
 
@@ -39,7 +39,7 @@ struct RangeSlider: View {
                     .fill(Color.white)
                     .overlay(
                         Capsule()
-                            .stroke(Color.blue, lineWidth: 2)
+                            .stroke(Color.indigo, lineWidth: 2)
                     )
                     .frame(width: 42, height: 24)
                     .position(x: lowerX, y: 13)
@@ -59,7 +59,7 @@ struct RangeSlider: View {
                     .fill(Color.white)
                     .overlay(
                         Capsule()
-                            .stroke(Color.blue, lineWidth: 2)
+                            .stroke(Color.indigo, lineWidth: 2)
                     )
                     .frame(width: 42, height: 24)
                     .position(x: upperX, y: 13)

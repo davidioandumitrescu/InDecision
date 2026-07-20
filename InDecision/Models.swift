@@ -15,16 +15,17 @@ struct DetailedEvent: Identifiable, Codable {
     var hostName: String = "Host"
     var location: String
     var experienceType: String
-    var created_by: UUID? = nil
+    var created_by: UUID
     
     // MARK: - Semantic Form Fields
     var activity: String
     var connectionTarget: String
-    var minPeople: Int
+    var minPeople: Double
     var maxPeople: Double
     var selectedDays: [String]
     var time: Date
     var imgUrl: String
+    var description: String
     
     // MARK: - Status
     /// false = Proposed (0 in DB), true = Solid (1 in DB)
@@ -85,16 +86,26 @@ struct DetailedEvent: Identifiable, Codable {
         }
         return multiDayText
     }
+    enum CodingKeys: String, CodingKey {
+        case id
+        case hostName = "host_name"
+        case location
+        case experienceType = "experience_type"
+        case created_by
+        case activity
+        case connectionTarget = "connection_target"
+        case minPeople = "min_people"
+        case maxPeople = "max_people"
+        case selectedDays = "selected_days"
+        case time
+        case imgUrl = "img_url"
+        case description
+        case isSolid = "is_solid"
+        case likeCount = "like_count"
+        case joinedCount = "joined_count"
+    }
 }
 
-
-struct User: Identifiable, Codable {
-    var id: String = UUID().uuidString
-    var name: String
-    var email: String
-    var phonenumber: String
-    var gender: String
-}
 
 struct Profile: Identifiable, Codable {
     let id: UUID

@@ -45,7 +45,7 @@ struct ExperienceDetailView: View {
                 
                 // 3. DETAILS LIST
                 VStack(alignment: .leading, spacing: 20) {
-                    DetailRow(icon: "person.fill", title: "Host", value: event.hostName)
+                    DetailRow(icon: "person.fill", title: "Host", value: event.created_by.uuidString)
                     DetailRow(icon: "mappin.and.ellipse", title: "Location", value: event.location)
                     DetailRow(icon: "calendar", title: "Days", value: event.selectedDays.isEmpty ? "Anytime" : event.selectedDays.joined(separator: ", "))
                     //DetailRow(icon: "clock.fill", title: "Time", value: event.time)
