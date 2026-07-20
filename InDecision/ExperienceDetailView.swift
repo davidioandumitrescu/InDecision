@@ -54,9 +54,55 @@ struct ExperienceDetailView: View {
                 .padding(.bottom, 8)
                 .padding(.top, 8)
                 
-                Rectangle().fill(Color.gray.opacity(0.2)).frame(height: 240)
-                    .overlay(Image(systemName: "photo").font(.largeTitle).foregroundColor(.gray))
-                    .clipShape(RoundedRectangle(cornerRadius: 20)).padding(.horizontal)
+//                Rectangle().fill(Color.gray.opacity(0.2)).frame(height: 240)
+//                    .overlay(Image(systemName: "photo").font(.largeTitle).foregroundColor(.gray))
+//                    .clipShape(RoundedRectangle(cornerRadius: 20)).padding(.horizontal)
+       
+                // Show saved image @Lisa
+                if let imgUrl = event.imgUrl,
+                   !imgUrl.isEmpty,
+                   let url = URL(string: imgUrl) {
+
+                    AsyncImage(url: url) { phase in
+                        switch phase {
+                        case .empty:
+                            ProgressView()
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 240)
+
+                        case .success(let image):
+                            image
+                                .resizable()
+                                .scaledToFill()
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 240)
+                                .clipped()
+
+                        case .failure:
+                            Image(systemName: "photo")
+                                .font(.largeTitle)
+                                .foregroundColor(.gray)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 240)
+                                .background(Color.gray.opacity(0.2))
+
+                        @unknown default:
+                            EmptyView()
+                        }
+                    }
+                    .clipShape(RoundedRectangle(cornerRadius: 20))
+                    .padding(.horizontal)
+
+                } else {
+                    Image(systemName: "photo")
+                        .font(.largeTitle)
+                        .foregroundColor(.gray)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 240)
+                        .background(Color.gray.opacity(0.2))
+                        .clipShape(RoundedRectangle(cornerRadius: 20))
+                        .padding(.horizontal)
+                }
                 
                 HStack(alignment: .center) {
                     Text("In \(event.location)")

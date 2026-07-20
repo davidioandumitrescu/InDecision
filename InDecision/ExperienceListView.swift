@@ -148,9 +148,50 @@ struct ExperienceListView: View {
                 }
                 
                 HStack(alignment: .top, spacing: 12) {
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(Color.gray.opacity(0.3))
-                        .frame(width: 80, height: 80)
+//                    RoundedRectangle(cornerRadius: 12)
+//                        .fill(Color.gray.opacity(0.3))
+//                        .frame(width: 80, height: 80)
+                        
+                    // Show saved image @Lisa
+                    if let imgUrl = event.imgUrl,
+                       !imgUrl.isEmpty,
+                       let url = URL(string: imgUrl) {
+
+                        AsyncImage(url: url) { phase in
+                            switch phase {
+                            case .empty:
+                                ProgressView()
+                                    .frame(width: 80, height: 80)
+
+                            case .success(let image):
+                                image
+                                    .resizable()
+                                    .scaledToFill()
+                                    .frame(width: 80, height: 80)
+                                    .clipped()
+
+                            case .failure:
+                                Image(systemName: "photo")
+                                    .font(.title2)
+                                    .foregroundColor(.gray)
+                                    .frame(width: 80, height: 80)
+                                    .background(Color.gray.opacity(0.2))
+
+                            @unknown default:
+                                EmptyView()
+                            }
+                        }
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+
+                    } else {
+                        Image(systemName: "photo")
+                            .font(.title2)
+                            .foregroundColor(.gray)
+                            .frame(width: 80, height: 80)
+                            .background(Color.gray.opacity(0.2))
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                    }
+                    
                     
                     VStack(alignment: .leading, spacing: 4) {
                         if event.status == .solid {
