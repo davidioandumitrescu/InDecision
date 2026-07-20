@@ -50,6 +50,7 @@ struct StaggeredBottomShape: Shape {
 struct StaggeredEventCard: View {
     var event: DetailedEvent
     var bgColor: Color
+    var nextColor: Color
     
     var stepHeight: CGFloat = 30
     var steps: Int = 3
@@ -64,7 +65,7 @@ struct StaggeredEventCard: View {
                 .font(.subheadline)
                 .fontWeight(.semibold)
                 .foregroundColor(.white.opacity(0.8))
-            NavigationLink(destination: ExperienceDetailView(event: event)) {
+            NavigationLink(destination: ExperienceDetailView(event: event, bgColor: bgColor, nextColor: nextColor)) {
                 Text(event.generatedTitle)
                     .font(.title2)
                     .bold()
@@ -173,6 +174,7 @@ struct ExperienceListView: View {
                                     StaggeredEventCard(
                                         event: event,
                                         bgColor: palette[index % palette.count],
+                                        nextColor: palette[(index + 1) % palette.count],
                                         stepHeight: stepHeight,
                                         steps: stepCount,
                                         isFirstItem: index == 0

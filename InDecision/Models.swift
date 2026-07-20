@@ -38,7 +38,7 @@ struct DetailedEvent: Identifiable, Codable {
     // MARK: - Computed Logic
     
     var generatedTitle: String {
-        "\(hostName) wants \(minPeople)-\(maxPeople) \(connectionTarget) to go \(activity) with \(formattedDaysString)"
+        "\(hostName) wants \(Int(minPeople))-\(Int(maxPeople)) \(connectionTarget) to go \(activity) with \(formattedDaysString)"
     }
     
     private var formattedDaysString: String {
@@ -51,16 +51,17 @@ struct DetailedEvent: Identifiable, Codable {
     }
     
     var stylizedPreview: Text {
-            Text("""
-            \(Text("\(hostName) ").foregroundColor(.blue))\
-            \(Text("wants ").foregroundColor(.black))\
-            \(Text("\(minPeople)-\(maxPeople) ").foregroundColor(.orange))\
-            \(Text("\(connectionTarget) ").foregroundColor(.blue))\
-            \(Text("to \ngo ").foregroundColor(.black))\
-            \(Text("\(activity) ").foregroundColor(.green))\
-            \(Text("with ").foregroundColor(.black))\
-            \(styledDaysText)
-            """)
+//            Text("""
+//            \(Text("\(hostName) ").foregroundColor(.blue))\
+//            \(Text("wants ").foregroundColor(.black))\
+//            \(Text("\(minPeople)-\(maxPeople) ").foregroundColor(.orange))\
+//            \(Text("\(connectionTarget) ").foregroundColor(.blue))\
+//            \(Text("to \ngo ").foregroundColor(.black))\
+//            \(Text("\(activity) ").foregroundColor(.green))\
+//            \(Text("with ").foregroundColor(.black))\
+//            \(styledDaysText)
+//            """)
+        Text("\(hostName) wants \(Int(minPeople))-\(Int(maxPeople)) \(connectionTarget) to \ngo \(activity) with \(formattedDaysString)")
         }
     
     private var styledDaysText: Text {

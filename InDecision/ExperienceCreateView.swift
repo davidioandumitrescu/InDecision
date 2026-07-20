@@ -374,7 +374,7 @@ struct ExperienceCreateView: View {
                 RangeSlider(
                     lowerValue: $minPeople,
                     upperValue: $maxPeople,
-                    bounds: 0...20
+                    bounds: 1...20
                 )
                 .padding()
                 
@@ -743,45 +743,62 @@ struct ExperienceCreateView: View {
     }
 
     private var previewText: Text {
-        let personName =
-            authManager.profile?.full_name
-            ?? authManager.profile?.username
-            ?? "Someone"
+            let hostName = authManager.profile?.full_name
+                ?? authManager.profile?.username
+                ?? "Someone"
 
-        let activity = activity.isEmpty
-            ? "something fun"
-            : activity
+            let safeActivity = activity.trimmingCharacters(in: .whitespaces).isEmpty
+                ? "do something fun"
+                : activity
 
-        let targetAudience = activity.isEmpty
-            ? "new people"
-            : activity
+            let safeTarget = connectionTarget.trimmingCharacters(in: .whitespaces).isEmpty
+                ? "new people"
+                : connectionTarget
 
-        let dayText = formattedSelectedDays
+            // Convert Doubles to Ints to remove the .0 decimals
+            let minP = Int(minPeople)
+            let maxP = Int(maxPeople)
+            let peopleString = minP == maxP ? "\(maxP)" : "\(minP)-\(maxP)"
 
-        return Text(personName)
-            .foregroundColor(.indigo)
+            // Using the exact stylized formatting from your DetailedEvent model
+            return Text("""
+                \(Text("\(hostName) ").foregroundColor(.blue))\
+                \(Text("wants ").foregroundColor(.primary))\
+                \(Text("\(peopleString) ").foregroundColor(.orange))\
+                \(Text("\(safeTarget) ").foregroundColor(.blue))\
+                \(Text("to \ngo ").foregroundColor(.primary))\
+                \(Text("\(safeActivity) ").foregroundColor(.green))\
+                \(Text("with ").foregroundColor(.primary))\
+                \(styledDaysText)
+                """)
+        }
 
-        + Text(" wants ")
-            .foregroundColor(.primary)
-
-        + Text("\(Int(maxPeople)) ")
-            .foregroundColor(.orange)
-
-        + Text(targetAudience)
-            .foregroundColor(.blue)
-
-        + Text(" to go ")
-            .foregroundColor(.primary)
-
-        + Text(activity)
-            .foregroundColor(.green)
-
-        + Text(" on ")
-            .foregroundColor(.primary)
-
-        + Text(dayText)
-            .foregroundColor(.indigo)
-    }
+        // Helper to stylize the days exactly like the DetailedEvent model
+        private var styledDaysText: Text {
+            let sortedDays = selectedDays.sorted { dayIndex($0) < dayIndex($1) }
+            
+            if sortedDays.isEmpty {
+                return Text("anytime").foregroundColor(.blue)
+            }
+            if sortedDays.count == 1 {
+                return Text(fullDayName(sortedDays[0])).foregroundColor(.blue)
+            }
+            if sortedDays.count == 2 {
+                return Text(fullDayName(sortedDays[0])).foregroundColor(.blue)
+                    + Text(" or ").foregroundColor(.primary)
+                    + Text(fullDayName(sortedDays[1])).foregroundColor(.blue)
+            }
+            
+            var multiDayText = Text("")
+            for (index, day) in sortedDays.enumerated() {
+                if index == sortedDays.count - 1 {
+                    multiDayText = multiDayText + Text("or ").foregroundColor(.primary) + Text(fullDayName(day)).foregroundColor(.blue)
+                } else {
+                    multiDayText = multiDayText + Text("\(fullDayName(day)), ").foregroundColor(.blue)
+                }
+            }
+            return multiDayText
+        }
 
     // MARK: - Buttons
 
