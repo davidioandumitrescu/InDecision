@@ -119,6 +119,7 @@ struct StaggeredEventCard: View {
 // MARK: - 3. THE MAIN LIST
 struct ExperienceListView: View {
     @EnvironmentObject var eventManager: EventManager
+    @EnvironmentObject var authManager: AuthManager
     
     // MARK: - Filter States
     @State private var searchText = ""
@@ -237,7 +238,7 @@ struct ExperienceListView: View {
                             }
                             
                             // Profile Button
-                            NavigationLink(destination: ProfileView()) {
+                            NavigationLink(destination: ProfileDestinationView()) {
                                 Image(systemName: "person.crop.circle.fill")
                                     .font(.system(size: 44))
                                     .foregroundColor(.white)
@@ -284,6 +285,8 @@ struct ExperienceListView: View {
             // Only fetch if empty to prevent unnecessary database calls every time the view appears
             if eventManager.events.isEmpty {
                 await eventManager.loadEvents()
+                await eventManager.loadSavedEvents(for: authManager.userID)
+                await eventManager.loadJoinedEvents(for: authManager.userID)
             }
         }
     }

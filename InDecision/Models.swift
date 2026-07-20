@@ -123,3 +123,13 @@ struct SavedEvent: Codable {
         case eventID = "event_id"
     }
 }
+
+struct JoinedEvent: Codable {
+    let userID: UUID
+    let eventID: UUID
+
+    enum CodingKeys: String, CodingKey {
+        case userID = "user_id"
+        case eventID = "event_id"
+    }
+}

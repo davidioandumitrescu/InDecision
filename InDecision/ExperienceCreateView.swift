@@ -1031,7 +1031,7 @@ struct ExperienceCreateView: View {
             \(trimmedDescription)
             """
 
-            let newEvent = DetailedEvent(location: location, experienceType: experienceType, created_by: authManager.userID!, activity: activity, connectionTarget: connectionTarget,  minPeople: minPeople, maxPeople: maxPeople, selectedDays: [], time: time, imgUrl: imgUrl, description: description, likeCount: 0, joinedCount: 1)
+            let newEvent = DetailedEvent(hostName: hostName,location: location, experienceType: experienceType, created_by: authManager.userID!, activity: activity, connectionTarget: connectionTarget,  minPeople: minPeople, maxPeople: maxPeople, selectedDays: [], time: time, imgUrl: imgUrl, description: description, likeCount: 0, joinedCount: 1)
 
             print(
                 "🖼️ New event image URL:",

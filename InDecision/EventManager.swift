@@ -15,6 +15,7 @@ class EventManager: ObservableObject {
     
     @Published var events: [DetailedEvent] = []
     @Published var savedEventIDs: Set<UUID> = []
+    @Published var joinedEventIDs: Set<UUID> = []
     @Published var errorMessage = ""
     
     @Published var selectedTab: Int = 0
@@ -53,7 +54,17 @@ class EventManager: ObservableObject {
                 .from("events")
                 .insert(event)
                 .execute()
-            //add the host as an atendee if this works
+            //automatically save and join the event you created
+            let joinEvent = JoinedEvent(userID: event.created_by, eventID: event.id)
+            
+            try await SupabaseManager.shared.client
+                .from("joined_events")
+                .insert(joinEvent)
+                .execute()
+            
+            // Add it to our local Set so the button instantly says "You are going"
+            joinedEventIDs.insert(event.id)
+            
             errorMessage = ""
             print("✅ Event created")
             
@@ -146,4 +157,99 @@ class EventManager: ObservableObject {
             print("❌ Failed to unsave event:", error)
         }
     }
+    
+    func loadJoinedEvents(for userID: UUID?) async {
+            guard let userID else {
+                joinedEventIDs = []
+                return
+            }
+
+            do {
+                let joinedEvents: [JoinedEvent] = try await SupabaseManager.shared.client
+                    .from("joined_events")
+                    .select()
+                    .eq("user_id", value: userID.uuidString)
+                    .execute()
+                    .value
+
+                joinedEventIDs = Set(joinedEvents.map(\.eventID))
+                errorMessage = ""
+            } catch {
+                errorMessage = error.localizedDescription
+                print("❌ Failed to load joined events:", error)
+            }
+        }
+
+        func toggleJoin(for eventId: UUID, userID: UUID?) async {
+            guard let userID else {
+                errorMessage = "You need to sign in before joining events."
+                return
+            }
+
+            if joinedEventIDs.contains(eventId) {
+                await leaveEvent(eventId, userID: userID)
+            } else {
+                await joinEvent(eventId, userID: userID)
+            }
+        }
+        
+        func isJoined(eventId: UUID) -> Bool {
+            joinedEventIDs.contains(eventId)
+        }
+
+        private func joinEvent(_ eventId: UUID, userID: UUID) async {
+            let joinedEvent = JoinedEvent(userID: userID, eventID: eventId)
+
+            do {
+                try await SupabaseManager.shared.client
+                    .from("joined_events")
+                    .insert(joinedEvent)
+                    .execute()
+
+                joinedEventIDs.insert(eventId)
+                
+                // Bump the joined counter up
+                if let index = events.firstIndex(where: { $0.id == eventId }) {
+                    events[index].joinedCount += 1
+                    try await SupabaseManager.shared.client
+                        .from("events")
+                        .update(["joinedCount": events[index].joinedCount])
+                        .eq("id", value: eventId.uuidString)
+                        .execute()
+                }
+                
+                errorMessage = ""
+            } catch {
+                errorMessage = error.localizedDescription
+                print("❌ Failed to join event:", error)
+            }
+        }
+
+        private func leaveEvent(_ eventId: UUID, userID: UUID) async {
+            do {
+                try await SupabaseManager.shared.client
+                    .from("joined_events")
+                    .delete()
+                    .eq("user_id", value: userID.uuidString)
+                    .eq("event_id", value: eventId.uuidString)
+                    .execute()
+
+                joinedEventIDs.remove(eventId)
+                
+                // Bump the joined counter down
+                if let index = events.firstIndex(where: { $0.id == eventId }) {
+                    events[index].joinedCount = max(0, events[index].joinedCount - 1)
+                    try await SupabaseManager.shared.client
+                        .from("events")
+                        .update(["joinedCount": events[index].joinedCount])
+                        .eq("id", value: eventId.uuidString)
+                        .execute()
+                }
+                
+                errorMessage = ""
+            } catch {
+                errorMessage = error.localizedDescription
+                print("❌ Failed to leave event:", error)
+            }
+        }
 }
