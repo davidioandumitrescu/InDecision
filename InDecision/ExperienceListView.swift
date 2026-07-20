@@ -7,54 +7,214 @@
 
 import SwiftUI
 
-struct ExperienceListView: View {
-    @EnvironmentObject var eventManager: EventManager
-        @State private var searchText = ""
-        @State private var selectedFilter = 0 // 0: All, 1: Proposed, 2: Solid
-        @State private var typeFilter: String = "All"
+// MARK: - 1. THE REVERSED STAGGERED SHAPE
+struct StaggeredBottomShape: Shape {
+    var steps: Int = 3
+    var stepHeight: CGFloat = 30
+    
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        let stepWidth = rect.width / CGFloat(steps)
         
-        let experienceTypes = ["All", "Teach", "Demonstrate", "StoryTell", "Build", "Mentor", "Explore", "Discuss", "Practice"]
+        // 1. Start top-left
+        path.move(to: CGPoint(x: 0, y: 0))
+        // 2. Line to top-right
+        path.addLine(to: CGPoint(x: rect.width, y: 0))
         
-        var filteredEvents: [DetailedEvent] {
-            eventManager.events.filter { event in
-                let matchesSearch = searchText.isEmpty || event.title.localizedCaseInsensitiveContains(searchText) || event.experienceType.localizedCaseInsensitiveContains(searchText)
-                
-                let matchesSegment: Bool
-                if selectedFilter == 1 { matchesSegment = event.status == .proposed }
-                else if selectedFilter == 2 { matchesSegment = event.status == .solid }
-                else { matchesSegment = true }
-                
-                let matchesType = (typeFilter == "All") || (event.experienceType == typeFilter)
-                
-                return matchesSearch && matchesSegment && matchesType
+        // 3. Line down the right side
+        let highestPointOnRight = rect.height - (CGFloat(steps - 1) * stepHeight)
+        path.addLine(to: CGPoint(x: rect.width, y: highestPointOnRight))
+        
+        // 4. Draw the steps going backwards from right to left, dropping DOWN
+        for i in (0..<steps).reversed() {
+            let currentX = CGFloat(i) * stepWidth
+            let currentY = rect.height - (CGFloat(i) * stepHeight)
+            
+            // Horizontal line going left
+            path.addLine(to: CGPoint(x: currentX, y: currentY))
+            
+            // Vertical line going down
+            if i != 0 {
+                let nextStepDownY = rect.height - (CGFloat(i - 1) * stepHeight)
+                path.addLine(to: CGPoint(x: currentX, y: nextStepDownY))
             }
         }
         
-        var body: some View {
-            NavigationStack {
-                ScrollView {
+        // 5. Close the path up the left side
+        path.closeSubpath()
+        return path
+    }
+}
+
+// MARK: - 2. THE CARD VIEW
+struct StaggeredEventCard: View {
+    var event: DetailedEvent
+    var bgColor: Color
+    
+    var stepHeight: CGFloat = 30
+    var steps: Int = 3
+    var isFirstItem: Bool = false
+    
+    var body: some View {
+        let overlapAmount = stepHeight * CGFloat(steps - 1)
+        let remainingPeople = max(0, event.maxPeople - event.joinedCount)
+        
+        VStack(alignment: .leading, spacing: 16) {
+            Text("\(remainingPeople) more people to reach goal!")
+                .font(.subheadline)
+                .fontWeight(.semibold)
+                .foregroundColor(.white.opacity(0.8))
+            NavigationLink(destination: ExperienceDetailView(event: event)) {
+                Text(event.generatedTitle)
+                    .font(.title2)
+                    .bold()
+                    .foregroundColor(.white)
+                    .lineSpacing(4)
+            }
+            .buttonStyle(PlainButtonStyle())
+            // Tags and Icons row
+            HStack(spacing: 12) {
+                // Proposed / Solid Tag
+                Text(event.isSolid ? "Solid" : "Proposed")
+                    .font(.subheadline)
+                    .fontWeight(.bold)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .background(event.isSolid ? Color.white.opacity(0.4) : Color.black.opacity(0.3))
+                    .clipShape(Capsule())
+                    .foregroundColor(.white)
+                
+                Text(event.experienceType)
+                    .font(.subheadline)
+                    .fontWeight(.bold)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .background(Color.black.opacity(0.3))
+                    .clipShape(Capsule())
+                    .foregroundColor(.white)
+                
+                Spacer()
+                
+                HStack(spacing: 4) {
+                    Image(systemName: "heart.fill").foregroundColor(.red)
+                    Text("\(event.likeCount)").foregroundColor(.black.opacity(0.6))
+                }.font(.subheadline.bold())
+                
+                HStack(spacing: 4) {
+                    Image(systemName: "checkmark.circle.fill").foregroundColor(.black.opacity(0.6))
+                    Text("\(event.joinedCount)").foregroundColor(.black.opacity(0.6))
+                }.font(.subheadline.bold())
+            }
+        }
+        .padding(.top, isFirstItem ? 200 : 48 + overlapAmount)
+        .padding(.horizontal, 32)
+        .padding(.bottom, 60 + overlapAmount)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(bgColor)
+        .clipShape(StaggeredBottomShape(steps: steps, stepHeight: stepHeight))
+    }
+}
+
+// MARK: - 3. THE MAIN LIST
+struct ExperienceListView: View {
+    @EnvironmentObject var eventManager: EventManager
+    
+    // MARK: - Filter States
+    @State private var searchText = ""
+    @State private var selectedFilter = 0
+    @State private var typeFilter: String = "All"
+    
+    let experienceTypes = ["All", "Teach", "Demonstrate", "StoryTell", "Build", "Mentor", "Explore", "Discuss", "Practice"]
+    
+    // MARK: - Dummy Data
+    let dummyEvents: [DetailedEvent] = [
+        DetailedEvent(hostName: "Dan", location: "Central Park", experienceType: "Sport", activity: "rock climbing dasdghfasdyhasfgdiuasdgaiusdgasiu dhasodiashiduasghdiuashdosaidhasoidhjasoidhasoiduashdoiashdosaidhsaidhsad", connectionTarget: "adventurers", minPeople: 5, maxPeople: 8, selectedDays: ["Mondays", "Tuesdays"], time: "5:00 PM", likeCount: 34, joinedCount: 3, isSolid: false),
+        DetailedEvent(hostName: "Alicia", location: "Nollamara", experienceType: "Wellness", activity: "do tai-chi", connectionTarget: "yogis", minPeople: 4, maxPeople: 10, selectedDays: ["Wednesdays", "Fridays"], time: "7:00 AM", likeCount: 89, joinedCount: 4, isSolid: true),
+        DetailedEvent(hostName: "Greg", location: "North", experienceType: "Social", activity: "hang out", connectionTarget: "guys", minPeople: 3, maxPeople: 6, selectedDays: ["Saturdays", "Sundays"], time: "12:00 PM", likeCount: 12, joinedCount: 5, isSolid: false),
+        DetailedEvent(hostName: "Pete", location: "South", experienceType: "Learn", activity: "share home maintenance skills akhsdgasuidhasd ashddhuasd ashjdgbashjdgajshdas asjdhvbasjhdbasjdas asjdhbasdhabsdjhasdjkashbdouashdoiasdhjaosidjasidj", connectionTarget: "DIY nerds", minPeople: 2, maxPeople: 6, selectedDays: ["any day"], time: "Flexible", likeCount: 42, joinedCount: 1, isSolid: false)
+    ]
+    
+    let palette: [Color] = [.teal, .green, .yellow, .orange]
+    let stepCount = 3
+    let stepHeight: CGFloat = 30
+    
+    var filterEvents: [DetailedEvent] {
+        dummyEvents.filter { event in
+            let matchesSearch = searchText.isEmpty || event.activity.localizedCaseInsensitiveContains(searchText) || event.hostName.localizedCaseInsensitiveContains(searchText)
+            
+            let matchesSegment: Bool
+            if selectedFilter == 1 { matchesSegment = !event.isSolid }
+            else if selectedFilter == 2 { matchesSegment = event.isSolid }
+            else { matchesSegment = true }
+            
+            let matchesType = (typeFilter == "All") || (event.experienceType == typeFilter)
+            
+            return matchesSearch && matchesSegment && matchesType
+        }
+    }
+    
+    var body: some View {
+        NavigationStack {
+            GeometryReader { geo in
+                ZStack(alignment: .top) {
+                    
+                    // MARK: - THE BACKGROUND SCROLLING LIST
+                    ScrollView(.vertical, showsIndicators: false) {
+                        let overlapAmount = stepHeight * CGFloat(stepCount - 1)
+                        
+                        if filterEvents.isEmpty {
+                            Text("No events match your search.")
+                                .foregroundColor(.gray)
+                                .frame(maxWidth: .infinity)
+                                .padding(.top, 200)
+                        } else {
+                            VStack(spacing: -overlapAmount) {
+                                // 1. ForEach goes FIRST to pull each 'event' out of the array
+                                ForEach(Array(filterEvents.enumerated()), id: \.element.id) { index, event in
+                                    
+                                        StaggeredEventCard(
+                                            event: event,
+                                            bgColor: palette[index % palette.count],
+                                            stepHeight: stepHeight,
+                                            steps: stepCount,
+                                            isFirstItem: index == 0
+                                        )
+                                    .zIndex(Double(filterEvents.count - index))
+                                }
+                            }
+                            .padding(.bottom, overlapAmount)
+                            // MARK: - BOTTOM SUGGESTION PROMPT
+                            Button(action: {
+                                // Wire this up to jump to your Create Tab
+                                // eventManager.selectedTab = 1
+                            }) {
+                                Text("Can't find anything interesting?\n**Suggest something.**")
+                                    .font(.subheadline)
+                                // Using the brand purple from your original onboarding
+                                    .foregroundColor(Color(red: 0.4, green: 0.35, blue: 0.96))
+                            }
+                            .padding(.bottom, 60)
+                        }
+                    }
+                    .background(palette.first?.ignoresSafeArea())
+                    .ignoresSafeArea(edges: .top)
+                    
+                    // MARK: - THE FOREGROUND PINNED HEADER
                     VStack(spacing: 16) {
                         
-                        // 1. CUSTOM SEARCH BAR & FILTER BUTTON
+                        // 1. Search Bar & Profile Button
                         HStack(spacing: 12) {
-                            // Search Field
                             HStack(spacing: 12) {
-                                Image(systemName: "magnifyingglass")
-                                    .foregroundColor(.gray)
-                                    .font(.system(size: 20))
-                                
-                                TextField("Explore", text: $searchText)
-                                    .font(.system(size: 18))
-                                
-                                Image(systemName: "mic")
-                                    .foregroundColor(.gray)
-                                    .font(.system(size: 20))
+                                Image(systemName: "magnifyingglass").foregroundColor(.gray).font(.system(size: 20))
+                                TextField("Explore", text: $searchText).font(.system(size: 18))
+                                Image(systemName: "mic").foregroundColor(.gray).font(.system(size: 20))
                             }
                             .padding(.horizontal, 16)
                             .padding(.vertical, 12)
-                            // Uses a subtle gray background to match your design
-                            .background(Color(.systemGray6))
+                            .background(Color.white.opacity(0.9))
                             .clipShape(Capsule())
+                            // ADDED SHADOW HERE
+                            .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
                             
                             // Filter Dropdown Button
                             Menu {
@@ -72,25 +232,25 @@ struct ExperienceListView: View {
                                     .font(.system(size: 20, weight: .medium))
                                     .foregroundColor(.black)
                                     .frame(width: 50, height: 50)
-                                    .background(Color.white)
+                                    .background(Color.white.opacity(0.9))
                                     .clipShape(Circle())
                                     .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
                             }
-                            //Profile Button
-                            NavigationLink(destination: ProfileDestinationView()) {
-                                    Image(systemName: "person.crop.circle.fill")
-                                        .font(.system(size: 44))
-                                        .frame(width: 50, height: 50)
-                                        .foregroundColor(.black)
-                                        .background(Color.white)
-                                        .clipShape(Circle())
-                                        .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
-                                }
+                            
+                            // Profile Button
+                            NavigationLink(destination: ProfileView()) {
+                                Image(systemName: "person.crop.circle.fill")
+                                    .font(.system(size: 44))
+                                    .foregroundColor(.black)
+                                    .frame(width: 50, height: 50)
+                                    .background(Color.white.opacity(0.9))
+                                    .clipShape(Circle())
+                                    .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
+                            }
                         }
                         .padding(.horizontal)
-                        .padding(.top, 8)
                         
-                        // 2. SEGMENTED CONTROL (Proposed / Solid)
+                        // 2. Segmented Control
                         Picker("Filter", selection: $selectedFilter) {
                             Text("All").tag(0)
                             Text("Proposed").tag(1)
@@ -99,83 +259,30 @@ struct ExperienceListView: View {
                         .pickerStyle(.segmented)
                         .padding(.horizontal)
                         
-                        // 3. ACTIVE FILTER INDICATOR
+                        // 3. Active Filter Indicator
                         if typeFilter != "All" {
                             HStack {
                                 Text("Filtered by: **\(typeFilter)**")
                                     .font(.caption)
-                                    .foregroundColor(.blue)
+                                    .foregroundColor(.black)
                                 Spacer()
                                 Button(action: { typeFilter = "All" }) {
                                     Image(systemName: "xmark.circle.fill")
-                                        .foregroundColor(.gray)
+                                        .foregroundColor(.black.opacity(0.6))
                                 }
                             }
                             .padding(.horizontal)
                         }
-                        
-                        // 4. EVENT CARDS
-                        if filteredEvents.isEmpty {
-                            Text("No events match your search.")
-                                .foregroundColor(.gray)
-                                .padding(.top, 40)
-                        } else {
-                            ForEach(filteredEvents) { event in
-                                NavigationLink(destination: ExperienceDetailView(event: event)) {
-                                    EventCardView(event: event)
-                                }
-                                .buttonStyle(PlainButtonStyle())
-                            }
-                        }
                     }
-                    .padding(.bottom, 20)
+                    .padding(.top, 8)
+                    .padding(.bottom, 12)
+                    .zIndex(1)
                 }
-                //.navigationTitle("Experience")
-                .task {
-                    await eventManager.loadEvents()
-                }
+                .frame(width: geo.size.width, height: geo.size.height)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color.white.ignoresSafeArea())
+                .toolbar(.hidden, for: .navigationBar)
             }
         }
     }
-    struct EventCardView: View {
-        let event: DetailedEvent
-        @EnvironmentObject var eventManager: EventManager
-        
-        var body: some View {
-            VStack(alignment: .leading, spacing: 12) {
-                if event.status == .proposed {
-                    Text("Proposed: \(event.title)").font(.headline)
-                }
-                
-                HStack(alignment: .top, spacing: 12) {
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(Color.gray.opacity(0.3))
-                        .frame(width: 80, height: 80)
-                    
-                    VStack(alignment: .leading, spacing: 4) {
-                        if event.status == .solid {
-                            Text(event.title).font(.headline)
-                        }
-                        Text("**\(event.hostName)** \(event.description)")
-                            .font(.subheadline).foregroundColor(.secondary).lineLimit(2)
-                        
-                        Text(event.experienceType)
-                            .font(.caption).padding(.horizontal, 8).padding(.vertical, 4)
-                            .background(Color.blue.opacity(0.1)).foregroundColor(.blue).clipShape(Capsule())
-                    }
-                    Spacer()
-                    
-                    Image(systemName: eventManager.isSaved(eventId: event.id) ? "heart.fill" : "heart")
-                        .foregroundColor(eventManager.isSaved(eventId: event.id) ? .red : .gray)
-                        .font(.title3)
-                        .padding(8)
-                        .contentShape(Rectangle())
-                        .onTapGesture {
-                            eventManager.toggleSave(for: event.id)
-                        }
-                }
-            }
-            .padding().background(Color.white).cornerRadius(16)
-            .shadow(color: .black.opacity(0.05), radius: 5, x: 0, y: 2).padding(.horizontal)
-        }
-    }
+}
