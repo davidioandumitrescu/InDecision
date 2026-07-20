@@ -4,11 +4,12 @@
 //
 //  Created by David-Ioan Dumitrescu on 16/7/2026.
 //
+/**
 
 import SwiftUI
 import Supabase
 
-struct ExperienceCreateView: View {
+struct ExperienceCreateView1: View {
     
     @EnvironmentObject var eventManager: EventManager
     @EnvironmentObject var authManager: AuthManager
@@ -215,3 +216,5 @@ struct ExperienceCreateView: View {
         .environmentObject(EventManager())
         .environmentObject(AuthManager())
 }
+
+**/

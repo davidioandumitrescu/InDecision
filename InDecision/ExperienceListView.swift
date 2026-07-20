@@ -57,7 +57,7 @@ struct StaggeredEventCard: View {
     
     var body: some View {
         let overlapAmount = stepHeight * CGFloat(steps - 1)
-        let remainingPeople = max(0, event.maxPeople - event.joinedCount)
+        let remainingPeople = max(0, Int(event.maxPeople) - event.joinedCount)
         
         VStack(alignment: .leading, spacing: 16) {
             Text("\(remainingPeople) more people to reach goal!")

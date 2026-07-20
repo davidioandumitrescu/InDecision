@@ -21,9 +21,10 @@ struct DetailedEvent: Identifiable, Codable {
     var activity: String
     var connectionTarget: String
     var minPeople: Int
-    var maxPeople: Int
+    var maxPeople: Double
     var selectedDays: [String]
-    var time: String
+    var time: Date
+    var imgUrl: String
     
     // MARK: - Status
     /// false = Proposed (0 in DB), true = Solid (1 in DB)
