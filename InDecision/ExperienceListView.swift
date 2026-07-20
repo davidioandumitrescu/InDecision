@@ -126,20 +126,13 @@ struct ExperienceListView: View {
     
     let experienceTypes = ["All", "Teach", "Demonstrate", "StoryTell", "Build", "Mentor", "Explore", "Discuss", "Practice"]
     
-    // MARK: - Dummy Data
-    let dummyEvents: [DetailedEvent] = [
-        DetailedEvent(hostName: "Dan", location: "Central Park", experienceType: "Sport", activity: "rock climbing dasdghfasdyhasfgdiuasdgaiusdgasiu dhasodiashiduasghdiuashdosaidhasoidhjasoidhasoiduashdoiashdosaidhsaidhsad", connectionTarget: "adventurers", minPeople: 5, maxPeople: 8, selectedDays: ["Mondays", "Tuesdays"], time: "5:00 PM", likeCount: 34, joinedCount: 3, isSolid: false),
-        DetailedEvent(hostName: "Alicia", location: "Nollamara", experienceType: "Wellness", activity: "do tai-chi", connectionTarget: "yogis", minPeople: 4, maxPeople: 10, selectedDays: ["Wednesdays", "Fridays"], time: "7:00 AM", likeCount: 89, joinedCount: 4, isSolid: true),
-        DetailedEvent(hostName: "Greg", location: "North", experienceType: "Social", activity: "hang out", connectionTarget: "guys", minPeople: 3, maxPeople: 6, selectedDays: ["Saturdays", "Sundays"], time: "12:00 PM", likeCount: 12, joinedCount: 5, isSolid: false),
-        DetailedEvent(hostName: "Pete", location: "South", experienceType: "Learn", activity: "share home maintenance skills akhsdgasuidhasd ashddhuasd ashjdgbashjdgajshdas asjdhvbasjhdbasjdas asjdhbasdhabsdjhasdjkashbdouashdoiasdhjaosidjasidj", connectionTarget: "DIY nerds", minPeople: 2, maxPeople: 6, selectedDays: ["any day"], time: "Flexible", likeCount: 42, joinedCount: 1, isSolid: false)
-    ]
-    
     let palette: [Color] = [.teal, .green, .yellow, .orange]
     let stepCount = 3
     let stepHeight: CGFloat = 30
     
+    // MARK: - Filter Logic (Now uses eventManager.events!)
     var filterEvents: [DetailedEvent] {
-        dummyEvents.filter { event in
+        eventManager.events.filter { event in
             let matchesSearch = searchText.isEmpty || event.activity.localizedCaseInsensitiveContains(searchText) || event.hostName.localizedCaseInsensitiveContains(searchText)
             
             let matchesSegment: Bool
@@ -163,34 +156,39 @@ struct ExperienceListView: View {
                         let overlapAmount = stepHeight * CGFloat(stepCount - 1)
                         
                         if filterEvents.isEmpty {
-                            Text("No events match your search.")
-                                .foregroundColor(.gray)
-                                .frame(maxWidth: .infinity)
-                                .padding(.top, 200)
+                            VStack(spacing: 16) {
+                                Text("No events match your search.")
+                                    .foregroundColor(.gray)
+                                
+                                // Show a loading indicator if events are still fetching
+                                if eventManager.events.isEmpty && eventManager.errorMessage.isEmpty {
+                                    ProgressView()
+                                }
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.top, 200)
                         } else {
                             VStack(spacing: -overlapAmount) {
-                                // 1. ForEach goes FIRST to pull each 'event' out of the array
                                 ForEach(Array(filterEvents.enumerated()), id: \.element.id) { index, event in
-                                    
-                                        StaggeredEventCard(
-                                            event: event,
-                                            bgColor: palette[index % palette.count],
-                                            stepHeight: stepHeight,
-                                            steps: stepCount,
-                                            isFirstItem: index == 0
-                                        )
+                                    StaggeredEventCard(
+                                        event: event,
+                                        bgColor: palette[index % palette.count],
+                                        stepHeight: stepHeight,
+                                        steps: stepCount,
+                                        isFirstItem: index == 0
+                                    )
                                     .zIndex(Double(filterEvents.count - index))
                                 }
                             }
                             .padding(.bottom, overlapAmount)
+                            
                             // MARK: - BOTTOM SUGGESTION PROMPT
                             Button(action: {
-                                // Wire this up to jump to your Create Tab
-                                // eventManager.selectedTab = 1
+                                // Jumps to your Create Tab via EventManager!
+                                eventManager.selectedTab = 1
                             }) {
                                 Text("Can't find anything interesting?\n**Suggest something.**")
                                     .font(.subheadline)
-                                // Using the brand purple from your original onboarding
                                     .foregroundColor(Color(red: 0.4, green: 0.35, blue: 0.96))
                             }
                             .padding(.bottom, 60)
@@ -213,7 +211,6 @@ struct ExperienceListView: View {
                             .padding(.vertical, 12)
                             .background(Color.white.opacity(0.9))
                             .clipShape(Capsule())
-                            // ADDED SHADOW HERE
                             .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
                             
                             // Filter Dropdown Button
@@ -282,6 +279,13 @@ struct ExperienceListView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(Color.white.ignoresSafeArea())
                 .toolbar(.hidden, for: .navigationBar)
+            }
+        }
+        // FETCH DATA WHEN THE VIEW LOADS
+        .task {
+            // Only fetch if empty to prevent unnecessary database calls every time the view appears
+            if eventManager.events.isEmpty {
+                await eventManager.loadEvents()
             }
         }
     }

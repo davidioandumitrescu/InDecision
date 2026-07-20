@@ -29,6 +29,9 @@ struct DetailedEvent: Identifiable, Codable {
     var likeCount: Int
     var joinedCount: Int
     
+    // MARK: - Attendance Tracking
+    var joined_user_ids: [UUID] = []
+    
     // MARK: - Status
     /// false = Proposed (0 in DB), true = Solid (1 in DB)
     var isSolid: Bool = false
