@@ -144,8 +144,8 @@ struct ExperienceDetailView: View {
                 HStack {
                     Spacer()
                     VStack(alignment: .trailing, spacing: 0) {
-                        nextColor.frame(width: 125, height: 80)
-                        nextColor.frame(width: 250, height: 80)
+                        nextColor.frame(width: 125, height: 60)
+                        nextColor.frame(width: 250, height: 60)
                     }
                 }
             }
