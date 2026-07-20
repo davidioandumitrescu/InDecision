@@ -17,10 +17,10 @@ struct ExperienceCreateView: View {
 
     
 
-    @State  var activity: String = ""
-    @State  var connectionTarget: String = ""
-    @State  var minPeople: Int = 0
-    @State  var maxPeople: Double = 0.0
+    @State var activity: String = ""
+    @State var connectionTarget: String = ""
+    @State var minPeople: Int = 0
+    @State var maxPeople: Double = 0.0
     @State private var selectedDays: Set<String> = [
             "Mon",
             "Tue"
@@ -341,31 +341,32 @@ struct ExperienceCreateView: View {
     // MARK: - Capacity
 
     private var capacitySection: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        @State  var minValue = 20.0
+        @State  var maxValue = 80.0
+        
+        return VStack(alignment: .leading, spacing: 16) {
             sectionTitle("With how many people?")
-
+            
             Text("\(Int(maxPeople)) people")
                 .font(.system(size: 16, weight: .semibold))
                 .foregroundColor(.indigo)
-
+            
             HStack(spacing: 14) {
                 Image(systemName: "person.fill")
                     .foregroundColor(.gray)
-
-                Slider(
-                    value: $maxPeople,
-                    in: 1...20,
-                    step: 1
+                
+                RangeSlider(
+                    lowerValue: $minValue,
+                    upperValue: $maxValue,
+                    bounds: 0...100
                 )
-                .tint(.indigo)
-                .onChange(of: maxPeople) {
-                    checkUnsavedChanges()
-                }
-
+                .padding()
+                
                 Image(systemName: "person.3.fill")
                     .foregroundColor(.gray)
             }
-
+            
+            
             Divider()
         }
     }
