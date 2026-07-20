@@ -84,6 +84,7 @@ struct ProfileSetupView: View {
 
 struct ProfileView: View {
     @EnvironmentObject var authManager: AuthManager
+    @EnvironmentObject var eventManager: EventManager
 
     var body: some View {
         VStack(spacing: 20) {
@@ -112,6 +113,7 @@ struct ProfileView: View {
             Button("Sign Out") {
                 Task {
                     await authManager.signOut()
+                    eventManager.clearSavedEvents()
                 }
             }
             .buttonStyle(.borderedProminent)
