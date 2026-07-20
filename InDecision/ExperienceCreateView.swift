@@ -107,19 +107,3 @@ struct ExperienceCreateView: View {
         dismiss()
     }
 }
-
-
-private func addEvent(event: DetailedEvent) async {
-    do {
-        try await SupabaseManager.shared.client
-            .from("events")
-            .insert(event)
-            .execute()
-
-        print("✅ Event uploaded")
-
-    } catch {
-        print("❌ Upload failed:", error)
-    }
-}
-

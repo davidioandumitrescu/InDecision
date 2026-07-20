@@ -100,3 +100,13 @@ struct Profile: Identifiable, Codable {
     let username: String
     let full_name: String?
 }
+
+struct SavedEvent: Codable {
+    let userID: UUID
+    let eventID: UUID
+
+    enum CodingKeys: String, CodingKey {
+        case userID = "user_id"
+        case eventID = "event_id"
+    }
+}

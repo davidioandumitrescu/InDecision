@@ -11,6 +11,7 @@ import SwiftUI
 struct ExperienceSavedView: View {
     
         @EnvironmentObject var eventManager: EventManager
+        @EnvironmentObject var authManager: AuthManager
         
         var savedEvents: [DetailedEvent] {
             eventManager.events.filter { eventManager.savedEventIDs.contains($0.id) }
@@ -39,6 +40,11 @@ struct ExperienceSavedView: View {
                 .padding(.horizontal)
                 .padding(.top, 8)
                 Spacer()
+            }
+            .task {
+                await authManager.refreshSession()
+                await eventManager.loadEvents()
+                await eventManager.loadSavedEvents(for: authManager.userID)
             }
         }
     }
