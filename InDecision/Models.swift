@@ -29,8 +29,6 @@ struct DetailedEvent: Identifiable, Codable {
     var likeCount: Int
     var joinedCount: Int
     
-    // MARK: - Attendance Tracking
-    var joined_user_ids: [UUID] = []
     
     // MARK: - Status
     /// false = Proposed (0 in DB), true = Solid (1 in DB)
@@ -105,6 +103,16 @@ struct Profile: Identifiable, Codable {
 }
 
 struct SavedEvent: Codable {
+    let userID: UUID
+    let eventID: UUID
+
+    enum CodingKeys: String, CodingKey {
+        case userID = "user_id"
+        case eventID = "event_id"
+    }
+}
+
+struct JoinedEvent: Codable {
     let userID: UUID
     let eventID: UUID
 
