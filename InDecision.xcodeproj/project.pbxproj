@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		8D096EE6300DE16A00C3CE65 /* Sliders in Frameworks */ = {isa = PBXBuildFile; productRef = 8D096EE5300DE16A00C3CE65 /* Sliders */; };
 		8DADA4053009C7CC005A865B /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = 8DADA4043009C7CC005A865B /* Supabase */; };
 /* End PBXBuildFile section */
 
@@ -28,6 +29,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				8DADA4053009C7CC005A865B /* Supabase in Frameworks */,
+				8D096EE6300DE16A00C3CE65 /* Sliders in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -71,6 +73,7 @@
 			name = InDecision;
 			packageProductDependencies = (
 				8DADA4043009C7CC005A865B /* Supabase */,
+				8D096EE5300DE16A00C3CE65 /* Sliders */,
 			);
 			productName = InDecision;
 			productReference = 50B384FA3008A70300855323 /* InDecision.app */;
@@ -102,6 +105,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				8DADA4033009C7CC005A865B /* XCRemoteSwiftPackageReference "supabase-swift" */,
+				8D096EE4300DE16A00C3CE65 /* XCRemoteSwiftPackageReference "swiftui-sliders" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 50B384FB3008A70300855323 /* Products */;
@@ -343,6 +347,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		8D096EE4300DE16A00C3CE65 /* XCRemoteSwiftPackageReference "swiftui-sliders" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/spacenation/swiftui-sliders";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.1.0;
+			};
+		};
 		8DADA4033009C7CC005A865B /* XCRemoteSwiftPackageReference "supabase-swift" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/supabase/supabase-swift";
@@ -354,6 +366,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		8D096EE5300DE16A00C3CE65 /* Sliders */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8D096EE4300DE16A00C3CE65 /* XCRemoteSwiftPackageReference "swiftui-sliders" */;
+			productName = Sliders;
+		};
 		8DADA4043009C7CC005A865B /* Supabase */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 8DADA4033009C7CC005A865B /* XCRemoteSwiftPackageReference "supabase-swift" */;

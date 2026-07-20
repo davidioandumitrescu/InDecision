@@ -85,98 +85,111 @@ struct ExperienceCreateView: View {
     }
     
     var body: some View {
-        Form {
-            Section {
-                Picker("Status", selection: $isSolid) {
-                    Text("Proposed").tag(false)
-                    Text("Solid").tag(true)
-                }
-                .pickerStyle(.segmented)
-                .onChange(of: isSolid) { checkUnsavedChanges() }
-            }
-            
-            Section(header: Text("Details")) {
-                TextField("Title (Required)", text: $title)
-                    .onChange(of: title) { checkUnsavedChanges() }
+        @State  var minValue = 20.0
+        @State  var maxValue = 80.0
+
+        ZStack{
+            Form {
+                /**Section {
+                    Picker("Status", selection: $isSolid) {
+                        Text("Proposed").tag(false)
+                        Text("Solid").tag(true)
+                    }
+                    .pickerStyle(.segmented)
+                    .onChange(of: isSolid) { checkUnsavedChanges() }
+                }**/
                 
-                if isSolid {
+                Section(header: Text("What are you looking to do?")) {
+                    TextField("Title (Required)", text: $title)
+                        .onChange(of: title) { checkUnsavedChanges() }
+
+                }
+                Section(header: Text("Who are you looking to connect with?")) {
                     TextField("Location (Required)", text: $location)
                         .onChange(of: location) { checkUnsavedChanges() }
+                    
+                }
+                
+                Section(header: Text("With how many people?")){
+                    RangeSlider(
+                        lowerValue: $minValue,
+                        upperValue: $maxValue,
+                        bounds: 0...100
+                    )
+                    .padding()
+
+                }
                     DatePicker("Date", selection: $startDate, displayedComponents: .date)
                     DatePicker("Time", selection: $startTime, displayedComponents: .hourAndMinute)
-                } else {
-                    TextField("Location (Optional)", text: $location)
-                        .onChange(of: location) { checkUnsavedChanges() }
-                    DatePicker("Start Date", selection: $startDate, displayedComponents: .date)
-                    DatePicker("End Date", selection: $endDate, displayedComponents: .date)
-                    DatePicker("Start Time", selection: $startTime, displayedComponents: .hourAndMinute)
-                    DatePicker("End Time", selection: $endTime, displayedComponents: .hourAndMinute)
-                }
-            }
-            
-            Section(header: Text("Experience Type")) {
-                Picker("Type", selection: $selectedExperience) {
-                    ForEach(experienceTypes, id: \.self) { type in
-                        Text(type).tag(type)
-                    }
-                }.pickerStyle(.menu)
-            }
-            
-            Section(header: Text("Description (Required)")) {
-                TextEditor(text: $description).frame(height: 80)
-                    .onChange(of: description) { checkUnsavedChanges() }
-            }
-            
-            Section(header: Text(capacity == 0 ? "Capacity: Unlimited" : "Capacity: \(Int(capacity)) people")) {
-                Slider(value: $capacity, in: 0...20, step: 1)
-                    .onChange(of: capacity) { checkUnsavedChanges() }
-            }
-            
-            Section(header: Text("Contact Info")) {
-                TextField(isSolid ? "Email or Phone (Optional)" : "Email or Phone (Required)", text: $contactInfo)
-                    .onChange(of: contactInfo) { checkUnsavedChanges() }
-            }
-        }
-        .navigationTitle("Create Proposal")
-        .navigationBarTitleDisplayMode(.inline)
-        .onReceive(eventManager.$formResetTrigger) { _ in
-            resetForm()
-        }
-        .alert("Missing Details", isPresented: $showValidationError) {
-            Button("Got it", role: .cancel) { }
-        } message: {
-            Text(validationMessage)
-        }
-        .toolbar {
-            ToolbarItem(placement: .topBarLeading) {
-                Button(action: {
-                    eventManager.formResetTrigger = UUID()
-                    eventManager.selectedTab = 0
-                }) {
-                    Image(systemName: "xmark").font(.body.weight(.semibold))
-                }
-                .foregroundColor(.red)
-                .opacity(eventManager.hasUnsavedChanges ? 1 : 0.2)
-                //.disabled(!eventManager.hasUnsavedChanges)
-            }
-            
-            ToolbarItem(placement: .topBarTrailing) {
-                Button(action: {
-                    if isFormValid {
-                        Task{
-                            await saveEvent()
-
+                
+                
+                Section(header: Text("Experience Type")) {
+                    Picker("Type", selection: $selectedExperience) {
+                        ForEach(experienceTypes, id: \.self) { type in
+                            Text(type).tag(type)
                         }
-                    } else {
-                        validationMessage = getValidationMessage()
-                        showValidationError = true
-                    }
-                }) {
-                    Image(systemName: "checkmark").font(.body.weight(.bold))
+                    }.pickerStyle(.menu)
                 }
-                .foregroundColor(.green)
+                
+                Section(header: Text("Description (Required)")) {
+                    TextEditor(text: $description).frame(height: 80)
+                        .onChange(of: description) { checkUnsavedChanges() }
+                }
+                
+                Section(header: Text(capacity == 0 ? "Capacity: Unlimited" : "Capacity: \(Int(capacity)) people")) {
+                    Slider(value: $capacity, in: 0...20, step: 1)
+                        .onChange(of: capacity) { checkUnsavedChanges() }
+                }
+                
+                Section(header: Text("Contact Info")) {
+                    TextField(isSolid ? "Email or Phone (Optional)" : "Email or Phone (Required)", text: $contactInfo)
+                        .onChange(of: contactInfo) { checkUnsavedChanges() }
+                }
+            }
+            .scrollContentBackground(.hidden)
+            .navigationTitle("Create Proposal")
+            .navigationBarTitleDisplayMode(.inline)
+            .onReceive(eventManager.$formResetTrigger) { _ in
+                resetForm()
+            }
+            .alert("Missing Details", isPresented: $showValidationError) {
+                Button("Got it", role: .cancel) { }
+            } message: {
+                Text(validationMessage)
+            }
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button(action: {
+                        eventManager.formResetTrigger = UUID()
+                        eventManager.selectedTab = 0
+                    }) {
+                        Image(systemName: "xmark").font(.body.weight(.semibold))
+                    }
+                    .foregroundColor(.red)
+                    .opacity(eventManager.hasUnsavedChanges ? 1 : 0.2)
+                    //.disabled(!eventManager.hasUnsavedChanges)
+                }
+                
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button(action: {
+                        if isFormValid {
+                            Task{
+                                await saveEvent()
+                                
+                            }
+                        } else {
+                            validationMessage = getValidationMessage()
+                            showValidationError = true
+                        }
+                    }) {
+                        Image(systemName: "checkmark").font(.body.weight(.bold))
+                    }
+                    .foregroundColor(.green)
+                }
             }
         }
+        .background(Color.white)
+        
     }
     
     private func saveEvent() async {
@@ -225,4 +238,10 @@ struct ExperienceCreateView: View {
             showValidationError = true
         }
     }
+}
+
+#Preview {
+    ExperienceCreateView()
+        .environmentObject(EventManager())
+        .environmentObject(AuthManager())
 }
