@@ -226,33 +226,33 @@ struct InterestTag: View {
     }
 }
 
-struct EventRowView: View{
-    let event: DetailedEvent
-    
-    var body: some View {
-        HStack(spacing: 10) {
-            VStack(alignment: .leading, spacing: 6){
-                Text(event.title)
-                    .fontWeight(.bold)
-                    .foregroundColor(.black)
-                
-                Text("Time: \(event.time)")
-                    .font(.subheadline)
-                    .foregroundColor(.black)
-                
-                Text("Location: \(event.location)")
-                    .font(.subheadline)
-                    .foregroundColor(.black)
-                
-            }
-            Spacer()
-            
-            Image(systemName: "chevron.right")
-                .foregroundColor(.blue)
-        }
-        .padding()
-    }
-}
+//struct EventRowView: View{
+//    let event: DetailedEvent
+//    
+//    var body: some View {
+//        HStack(spacing: 10) {
+//            VStack(alignment: .leading, spacing: 6){
+//                Text(event.title)
+//                    .fontWeight(.bold)
+//                    .foregroundColor(.black)
+//                
+//                Text("Time: \(event.time)")
+//                    .font(.subheadline)
+//                    .foregroundColor(.black)
+//                
+//                Text("Location: \(event.location)")
+//                    .font(.subheadline)
+//                    .foregroundColor(.black)
+//                
+//            }
+//            Spacer()
+//            
+//            Image(systemName: "chevron.right")
+//                .foregroundColor(.blue)
+//        }
+//        .padding()
+//    }
+//}
 
 
 

@@ -117,6 +117,7 @@ final class AuthManager: ObservableObject {
 
         let trimmedUsername = username.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedFullName = fullName?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedAvatrUrl = UserDefaults.standard.string(forKey: "avatarUrl")
 
         guard !trimmedUsername.isEmpty else {
             errorMessage = "Choose a username before continuing."
@@ -130,7 +131,8 @@ final class AuthManager: ObservableObject {
             let newProfile = Profile(
                 id: userID,
                 username: trimmedUsername,
-                full_name: trimmedFullName?.isEmpty == true ? nil : trimmedFullName
+                full_name: trimmedFullName?.isEmpty == true ? nil : trimmedFullName,
+                avatar_url: trimmedAvatrUrl?.isEmpty == true ? nil : trimmedAvatrUrl
             )
 
             try await client

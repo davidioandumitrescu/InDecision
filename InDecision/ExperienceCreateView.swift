@@ -950,115 +950,183 @@ struct ExperienceCreateView: View {
 
     // MARK: - Save Event
 
-    @MainActor
-    private func saveEvent() async {
-        isUploading = true
-        uploadErrorMessage = nil
+//    @MainActor
+//    private func saveEvent() async {
+//        isUploading = true
+//        uploadErrorMessage = nil
+//
+//        defer {
+//            isUploading = false
+//        }
+//
+//        do {
+//            let imageURL = try await uploadEventImage()
+//
+//            let timeFormatter = DateFormatter()
+//            timeFormatter.dateStyle = .none
+//            timeFormatter.timeStyle = .short
+//
+//            let timeString = timeFormatter.string(
+//                from: startTime
+//            )
+//
+//            let trimmedTitle = title.trimmingCharacters(
+//                in: .whitespacesAndNewlines
+//            )
+//
+//            let trimmedAudience =
+//                audience.trimmingCharacters(
+//                    in: .whitespacesAndNewlines
+//                )
+//
+//            let trimmedDescription =
+//                description.trimmingCharacters(
+//                    in: .whitespacesAndNewlines
+//                )
+//
+//            let trimmedContact =
+//                contactInfo.trimmingCharacters(
+//                    in: .whitespacesAndNewlines
+//                )
+//
+//            let hostName =
+//                authManager.profile?.full_name
+//                ?? authManager.profile?.username
+//                ?? "Guest"
+//
+//            /*
+//             Audience is not currently a separate
+//             DetailedEvent or database field, so it
+//             is included in the description.
+//             */
+//            let savedDescription = """
+//            Looking to connect with: \(trimmedAudience)
+//
+//            \(trimmedDescription)
+//            """
+//
+//            let newEvent = DetailedEvent(
+//                createdBy: authManager.userID,
+//                title: trimmedTitle,
+//                status: .proposed,
+//                hostName: hostName,
+//                location: location.isEmpty
+//                    ? "TBD"
+//                    : location,
+//                date: formattedSelectedDays,
+//                time: timeString,
+//                description: savedDescription,
+//                experienceType: selectedExperience,
+//                capacity: capacity,
+//                contactEmail: trimmedContact,
+//                imgUrl: imageURL
+//            )
+//
+//            print(
+//                "🖼️ New event image URL:",
+//                newEvent.imgUrl ?? "nil"
+//            )
+//
+//            let didCreateEvent =
+//                await eventManager.createEvent(
+//                    newEvent
+//                )
+//
+//            if didCreateEvent {
+//                eventManager.formResetTrigger = UUID()
+//                eventManager.selectedTab = 0
+//            } else {
+//                validationMessage =
+//                    eventManager.errorMessage.isEmpty
+//                    ? "Event could not be created."
+//                    : eventManager.errorMessage
+//
+//                showValidationError = true
+//            }
+//
+//        } catch {
+//            let errorMessage =
+//                "Image upload failed: \(error.localizedDescription)"
+//
+//            uploadErrorMessage = errorMessage
+//            validationMessage = errorMessage
+//            showValidationError = true
+//
+//            print(
+//                "❌ Image upload failed:",
+//                error
+//            )
+//        }
+//    }
+    // MARK: - Save Event
 
-        defer {
-            isUploading = false
-        }
+        @MainActor
+        private func saveEvent() async {
+            isUploading = true
+            uploadErrorMessage = nil
 
-        do {
-            let imageURL = try await uploadEventImage()
-
-            let timeFormatter = DateFormatter()
-            timeFormatter.dateStyle = .none
-            timeFormatter.timeStyle = .short
-
-            let timeString = timeFormatter.string(
-                from: startTime
-            )
-
-            let trimmedTitle = title.trimmingCharacters(
-                in: .whitespacesAndNewlines
-            )
-
-            let trimmedAudience =
-                audience.trimmingCharacters(
-                    in: .whitespacesAndNewlines
-                )
-
-            let trimmedDescription =
-                description.trimmingCharacters(
-                    in: .whitespacesAndNewlines
-                )
-
-            let trimmedContact =
-                contactInfo.trimmingCharacters(
-                    in: .whitespacesAndNewlines
-                )
-
-            let hostName =
-                authManager.profile?.full_name
-                ?? authManager.profile?.username
-                ?? "Guest"
-
-            /*
-             Audience is not currently a separate
-             DetailedEvent or database field, so it
-             is included in the description.
-             */
-            let savedDescription = """
-            Looking to connect with: \(trimmedAudience)
-
-            \(trimmedDescription)
-            """
-
-            let newEvent = DetailedEvent(
-                createdBy: authManager.userID,
-                title: trimmedTitle,
-                status: .proposed,
-                hostName: hostName,
-                location: location.isEmpty
-                    ? "TBD"
-                    : location,
-                date: formattedSelectedDays,
-                time: timeString,
-                description: savedDescription,
-                experienceType: selectedExperience,
-                capacity: capacity,
-                contactEmail: trimmedContact,
-                imgUrl: imageURL
-            )
-
-            print(
-                "🖼️ New event image URL:",
-                newEvent.imgUrl ?? "nil"
-            )
-
-            let didCreateEvent =
-                await eventManager.createEvent(
-                    newEvent
-                )
-
-            if didCreateEvent {
-                eventManager.formResetTrigger = UUID()
-                eventManager.selectedTab = 0
-            } else {
-                validationMessage =
-                    eventManager.errorMessage.isEmpty
-                    ? "Event could not be created."
-                    : eventManager.errorMessage
-
-                showValidationError = true
+            defer {
+                isUploading = false
             }
 
-        } catch {
-            let errorMessage =
-                "Image upload failed: \(error.localizedDescription)"
+            do {
+                // 1. 获取上传后的图片 URL（如果没有则默认为空字符串，匹配最新非可选 String 类型）
+                let imageURL = try await uploadEventImage() ?? ""
 
-            uploadErrorMessage = errorMessage
-            validationMessage = errorMessage
-            showValidationError = true
+                let trimmedActivity = title.trimmingCharacters(in: .whitespacesAndNewlines)
+                let trimmedTarget = audience.trimmingCharacters(in: .whitespacesAndNewlines)
+                let trimmedLocation = location.isEmpty ? "TBD" : location
+                let trimmedDescription = description.trimmingCharacters(in: .whitespacesAndNewlines)
+                let trimmedContact = contactInfo.trimmingCharacters(in: .whitespacesAndNewlines)
 
-            print(
-                "❌ Image upload failed:",
-                error
-            )
+                let hostName = authManager.profile?.full_name
+                    ?? authManager.profile?.username
+                    ?? "Guest"
+
+                // 🌟 核心修正：完美适配最新 Model 字段与数据类型
+                let newEvent = DetailedEvent(
+                    id: UUID(),
+                    hostName: hostName,
+                    location: trimmedLocation,
+                    experienceType: selectedExperience,
+                    created_by: authManager.userID,
+                    activity: trimmedActivity,
+                    connectionTarget: trimmedTarget,
+                    minPeople: 1,                    // 临时保底值，可后续绑定 UI
+                    maxPeople: Int(capacity),        // 将 Slider 的 Double 转为 Int
+                    selectedDays: Array(selectedDays), // 将 Set 转为 Array
+                    time: startTime,                 // 直接传入 Date 实例，解决 String 转 Date 报错
+                    imgUrl: imageURL,                // 传入非可选 String
+                    isSolid: false,                  // 替代旧版的 .proposed 状态
+                    likeCount: 0,
+                    joinedCount: 0
+                )
+
+                print("🖼️ New event ready to upload:", newEvent.generatedTitle)
+
+                let didCreateEvent = await eventManager.createEvent(newEvent)
+
+                if didCreateEvent {
+                    eventManager.formResetTrigger = UUID()
+                    eventManager.selectedTab = 0
+                } else {
+                    validationMessage = eventManager.errorMessage.isEmpty
+                        ? "Event could not be created."
+                        : eventManager.errorMessage
+
+                    showValidationError = true
+                }
+
+            } catch {
+                let errorMessage = "Image upload failed: \(error.localizedDescription)"
+                uploadErrorMessage = errorMessage
+                validationMessage = errorMessage
+                showValidationError = true
+                print("❌ Image upload failed:", error)
+            }
         }
-    }
-
+    
+    
     // MARK: - Image Loading
 
     @MainActor
