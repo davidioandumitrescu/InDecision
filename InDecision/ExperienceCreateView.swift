@@ -8,6 +8,8 @@
 
 import SwiftUI
 import Supabase
+import PhotosUI
+import UIKit
 
 struct ExperienceCreateView1: View {
     
@@ -40,9 +42,10 @@ struct ExperienceCreateView1: View {
         if isSolid {
             if location.trimmingCharacters(in: .whitespaces).isEmpty { return false }
         }
+
         return true
     }
-    
+
     private func getValidationMessage() -> String {
         var missingFields: [String] = []
         
@@ -192,6 +195,39 @@ struct ExperienceCreateView1: View {
             showValidationError = true
             return
         }
+
+        if isFormValid {
+            Task {
+                await saveEvent()
+            }
+        } else {
+            validationMessage = getValidationMessage()
+            showValidationError = true
+        }
+    }
+
+    private func toggleDay(_ day: String) {
+        if selectedDays.contains(day) {
+            selectedDays.remove(day)
+        } else {
+            selectedDays.insert(day)
+        }
+
+        checkUnsavedChanges()
+    }
+
+    private var formattedSelectedDays: String {
+        let sortedDays = selectedDays.sorted {
+            dayIndex($0) < dayIndex($1)
+        }
+
+        guard !sortedDays.isEmpty else {
+            return "any day"
+        }
+
+        if sortedDays.count == 1 {
+            return fullDayName(sortedDays[0])
+        }
         
         //let finalDate = isSolid ? startDString : "\(startDString) - \(endDString)"
         //let finalTime = isSolid ? startTString : "\(startTString) - \(endTString)"
@@ -200,16 +236,193 @@ struct ExperienceCreateView1: View {
         
         let newEvent = DetailedEvent(location: location, experienceType: experienceType, activity: activity, connectionTarget: connectionTarget, minPeople: minPeople, maxPeople: maxPeople, selectedDays: [], time: time, likeCount: 0, joinedCount: 0)
         
-        let didCreateEvent = await eventManager.createEvent(newEvent)
-        if didCreateEvent {
-            eventManager.formResetTrigger = UUID()
-            eventManager.selectedTab = 0
-        } else {
-            validationMessage = eventManager.errorMessage.isEmpty ? "Event could not be created." : eventManager.errorMessage
-            showValidationError = true
+        return "multiple days"
+    }
+
+    private func dayIndex(_ day: String) -> Int {
+        weekDays.firstIndex(of: day)
+        ?? weekDays.count
+    }
+
+    private func fullDayName(
+        _ abbreviatedDay: String
+    ) -> String {
+        switch abbreviatedDay {
+        case "Mon":
+            return "monday"
+        case "Tue":
+            return "tuesday"
+        case "Wed":
+            return "wednesday"
+        case "Thu":
+            return "thursday"
+        case "Fri":
+            return "friday"
+        case "Sat":
+            return "saturday"
+        case "Sun":
+            return "sunday"
+        default:
+            return abbreviatedDay
         }
     }
-}
+
+    // MARK: - Unsaved Changes
+
+    private func checkUnsavedChanges() {
+        let hasTextChanges =
+            !title.isEmpty
+            || !audience.isEmpty
+            || !location.isEmpty
+            || !description.isEmpty
+            || !contactInfo.isEmpty
+
+        let hasOtherChanges =
+            capacity != 5
+            || selectedDays != ["Mon", "Tue"]
+            || selectedUIImage != nil
+
+        let isDirty =
+            hasTextChanges
+            || hasOtherChanges
+
+        if eventManager.hasUnsavedChanges != isDirty {
+            eventManager.hasUnsavedChanges = isDirty
+        }
+    }
+
+    private func resetForm() {
+        title = ""
+        audience = ""
+        location = ""
+        description = ""
+        contactInfo = ""
+
+        selectedExperience = "Explore"
+        capacity = 5
+        startTime = Date()
+        selectedDays = ["Mon", "Tue"]
+
+        selectedPhotoItem = nil
+        selectedImageData = nil
+        selectedUIImage = nil
+
+        uploadErrorMessage = nil
+        isUploading = false
+
+        eventManager.hasUnsavedChanges = false
+    }
+
+    // MARK: - Save Event
+
+    @MainActor
+    private func saveEvent() async {
+        isUploading = true
+        uploadErrorMessage = nil
+
+        defer {
+            isUploading = false
+        }
+
+        do {
+            let imageURL = try await uploadEventImage()
+
+            let timeFormatter = DateFormatter()
+            timeFormatter.dateStyle = .none
+            timeFormatter.timeStyle = .short
+
+            let timeString = timeFormatter.string(
+                from: startTime
+            )
+
+            let trimmedTitle = title.trimmingCharacters(
+                in: .whitespacesAndNewlines
+            )
+
+            let trimmedAudience =
+                audience.trimmingCharacters(
+                    in: .whitespacesAndNewlines
+                )
+
+            let trimmedDescription =
+                description.trimmingCharacters(
+                    in: .whitespacesAndNewlines
+                )
+
+            let trimmedContact =
+                contactInfo.trimmingCharacters(
+                    in: .whitespacesAndNewlines
+                )
+
+            let hostName =
+                authManager.profile?.full_name
+                ?? authManager.profile?.username
+                ?? "Guest"
+
+            /*
+             Audience is not currently a separate
+             DetailedEvent or database field, so it
+             is included in the description.
+             */
+            let savedDescription = """
+            Looking to connect with: \(trimmedAudience)
+
+            \(trimmedDescription)
+            """
+
+            let newEvent = DetailedEvent(
+                createdBy: authManager.userID,
+                title: trimmedTitle,
+                status: .proposed,
+                hostName: hostName,
+                location: location.isEmpty
+                    ? "TBD"
+                    : location,
+                date: formattedSelectedDays,
+                time: timeString,
+                description: savedDescription,
+                experienceType: selectedExperience,
+                capacity: capacity,
+                contactEmail: trimmedContact,
+                imgUrl: imageURL
+            )
+
+            print(
+                "🖼️ New event image URL:",
+                newEvent.imgUrl ?? "nil"
+            )
+
+            let didCreateEvent =
+                await eventManager.createEvent(
+                    newEvent
+                )
+
+            if didCreateEvent {
+                eventManager.formResetTrigger = UUID()
+                eventManager.selectedTab = 0
+            } else {
+                validationMessage =
+                    eventManager.errorMessage.isEmpty
+                    ? "Event could not be created."
+                    : eventManager.errorMessage
+
+                showValidationError = true
+            }
+
+        } catch {
+            let errorMessage =
+                "Image upload failed: \(error.localizedDescription)"
+
+            uploadErrorMessage = errorMessage
+            validationMessage = errorMessage
+            showValidationError = true
+
+            print(
+                "❌ Image upload failed:",
+                error
+            )
+        }
+    }
 
 #Preview {
     ExperienceCreateView()
