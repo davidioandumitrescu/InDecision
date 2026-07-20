@@ -39,28 +39,6 @@ struct ExperienceSavedView: View {
                 }
                 .padding(.horizontal)
                 .padding(.top, 8)
-                
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 16) {
-                        ForEach(savedEvents) { event in
-                            NavigationLink(destination: ExperienceDetailView(event: event)) {
-                                VStack {
-                                    Circle()
-                                        .fill(Color.blue.opacity(0.2))
-                                        .frame(width: 70, height: 70)
-                                        .overlay(Text(String(event.title.prefix(1))).font(.title).foregroundColor(.blue))
-                                    
-                                    Text(event.title)
-                                        .font(.caption)
-                                        .lineLimit(1)
-                                        .frame(width: 70)
-                                        .foregroundColor(.primary)                                }
-                            }
-                            
-                        }
-                    }
-                    .padding(.horizontal)
-                }
                 Spacer()
             }
             .task {
