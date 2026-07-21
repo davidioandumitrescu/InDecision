@@ -55,12 +55,12 @@ class EventManager: ObservableObject {
                 .insert(event)
                 .execute()
             //automatically save and join the event you created
-            let joinEvent = JoinedEvent(userID: event.created_by, eventID: event.id)
-            
-            try await SupabaseManager.shared.client
-                .from("joined_events")
-                .insert(joinEvent)
-                .execute()
+//            let joinEvent = JoinedEvent(userID: event.created_by, eventID: event.id)
+//            
+//            try await SupabaseManager.shared.client
+//                .from("joined_events")
+//                .insert(joinEvent)
+//                .execute()
             
             // Add it to our local Set so the button instantly says "You are going"
             joinedEventIDs.insert(event.id)
