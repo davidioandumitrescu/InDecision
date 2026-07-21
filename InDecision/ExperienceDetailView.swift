@@ -15,6 +15,9 @@ struct ExperienceDetailView: View {
     @EnvironmentObject var authManager: AuthManager
     @Environment(\.dismiss) var dismiss
     
+    @State private var showDeleteAlert = false
+    @State private var showEditSheet = false
+    
     // UI State
     @State private var attendees: [Profile] = []
     @State private var isLoadingAttendees: Bool = true
@@ -203,9 +206,9 @@ struct ExperienceDetailView: View {
     private var actionButtonsArea: some View {
         VStack(spacing: 12) {
             Button(action: {
-                Task {
-                    await eventManager.toggleJoin(for: event.id, userID: authManager.userID)
-                }
+                    Task {
+                        await eventManager.toggleJoin(for: event.id, userID: authManager.userID)
+                    }
             }) {
                 HStack {
                     Image(systemName: isJoined ? "checkmark.circle.fill" : "checkmark.circle")
@@ -226,7 +229,7 @@ struct ExperienceDetailView: View {
                     await eventManager.toggleSave(for: event.id, userID: authManager.userID)
                 }
             }) {
-                Label("Save for later", systemImage: "heart.fill")
+                Label(isSaved ? "Saved" : "Save for later", systemImage: isSaved ? "heart.fill" : "heart")
                     .font(Font.body.bold())
                     .foregroundColor(buttonPurple)
                     .frame(maxWidth: .infinity)

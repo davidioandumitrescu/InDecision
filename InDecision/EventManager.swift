@@ -66,12 +66,12 @@ class EventManager: ObservableObject {
                 .insert(event)
                 .execute()
             //automatically save and join the event you created
-            let joinEvent = JoinedEvent(userID: event.created_by, eventID: event.id)
-            
-            try await SupabaseManager.shared.client
-                .from("joined_events")
-                .insert(joinEvent)
-                .execute()
+//            let joinEvent = JoinedEvent(userID: event.created_by, eventID: event.id)
+//            
+//            try await SupabaseManager.shared.client
+//                .from("joined_events")
+//                .insert(joinEvent)
+//                .execute()
             
             // Add it to our local Set so the button instantly says "You are going"
             joinedEventIDs.insert(event.id)
@@ -262,4 +262,51 @@ class EventManager: ObservableObject {
                 print("❌ Failed to leave event:", error)
             }
         }
+    
+    func updateEvent(_ event: DetailedEvent) async -> Bool {
+            do {
+                try await SupabaseManager.shared.client
+                    .from("events")
+                    .update(event) // Supabase will automatically map this to the row with the matching ID
+                    .eq("id", value: event.id.uuidString)
+                    .execute()
+                
+                // Instantly update our local array so the UI changes without needing to reload
+                if let index = events.firstIndex(where: { $0.id == event.id }) {
+                    events[index] = event
+                }
+                
+                errorMessage = ""
+                print("✅ Event updated")
+                return true
+                
+            } catch {
+                errorMessage = error.localizedDescription
+                print("❌ Failed to update event:", error)
+                return false
+            }
+        }
+        
+        func deleteEvent(eventID: UUID) async {
+            do {
+                try await SupabaseManager.shared.client
+                    .from("events")
+                    .delete()
+                    .eq("id", value: eventID.uuidString)
+                    .execute()
+                
+                // Instantly remove it from our local arrays so it vanishes from the UI
+                events.removeAll(where: { $0.id == eventID })
+                savedEventIDs.remove(eventID)
+                joinedEventIDs.remove(eventID)
+                
+                errorMessage = ""
+                print("✅ Event deleted")
+                
+            } catch {
+                errorMessage = error.localizedDescription
+                print("❌ Failed to delete event:", error)
+            }
+        }
+    
 }
