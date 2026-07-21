@@ -162,6 +162,15 @@ class EventManager: ObservableObject {
                 .execute()
 
             errorMessage = ""
+            
+            if let index = events.firstIndex(where: { $0.id == eventId }) {
+                events[index].likeCount += 1
+                try await SupabaseManager.shared.client
+                    .from("events")
+                    .update(["like_count": events[index].likeCount])
+                    .eq("id", value: eventId.uuidString)
+                    .execute()
+            }
         } catch {
             errorMessage = error.localizedDescription
             print("❌ Failed to save event:", error)
@@ -176,7 +185,17 @@ class EventManager: ObservableObject {
                 .eq("user_id", value: userID.uuidString)
                 .eq("event_id", value: eventId.uuidString)
                 .execute()
-
+            
+            // Bump the joined counter down
+            if let index = events.firstIndex(where: { $0.id == eventId }) {
+                events[index].likeCount = max(0, events[index].likeCount - 1)
+                try await SupabaseManager.shared.client
+                    .from("events")
+                    .update(["like_count": events[index].likeCount])
+                    .eq("id", value: eventId.uuidString)
+                    .execute()
+            }
+            
             savedEventIDs.remove(eventId)
             errorMessage = ""
         } catch {
