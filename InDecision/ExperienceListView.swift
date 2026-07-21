@@ -45,8 +45,6 @@ struct StaggeredBottomShape: Shape {
         return path
     }
 }
-
-// MARK: - 2. THE CARD VIEW
 struct StaggeredEventCard: View {
     @EnvironmentObject var eventManager: EventManager
     @EnvironmentObject var authManager: AuthManager
@@ -59,15 +57,20 @@ struct StaggeredEventCard: View {
     var steps: Int = 3
     var isFirstItem: Bool = false
     
+    // MARK: - Animation State
+    @State private var likeAnimationActive = false
+    
     var body: some View {
         let overlapAmount = stepHeight * CGFloat(steps - 1)
         let remainingPeople = max(0, Int(event.maxPeople) - event.joinedCount)
+        let shape = StaggeredBottomShape(steps: steps, stepHeight: stepHeight)
         
         VStack(alignment: .leading, spacing: 16) {
             Text("\(remainingPeople) more people to reach goal!")
                 .font(.subheadline)
                 .fontWeight(.semibold)
                 .foregroundColor(.white.opacity(0.8))
+            
             NavigationLink(destination: ExperienceDetailView(event: event, bgColor: bgColor, nextColor: nextColor)) {
                 Text(event.generatedTitle)
                     .font(.title2)
@@ -75,13 +78,20 @@ struct StaggeredEventCard: View {
                     .foregroundColor(.white)
                     .lineSpacing(4)
                     .onTapGesture(count: 2) {
+                        // 1. Toggle like in the backend
                         Task { await eventManager.toggleSave(for: event.id, userID: authManager.userID) }
+                        // 2. Trigger the animation
+                        withAnimation { likeAnimationActive = true }
+                        // 3. Reset after the animation finishes
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                            likeAnimationActive = false
+                        }
                     }
             }
             .buttonStyle(PlainButtonStyle())
-            // Tags and Icons row
+            
+            // Tags and Icons row (unchanged)
             HStack(spacing: 12) {
-                // Proposed / Solid Tag
                 Text(event.isSolid ? "Solid" : "Proposed")
                     .font(.subheadline)
                     .fontWeight(.bold)
@@ -118,10 +128,58 @@ struct StaggeredEventCard: View {
         .padding(.bottom, 60 + overlapAmount)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(bgColor)
-        .clipShape(StaggeredBottomShape(steps: steps, stepHeight: stepHeight))
+        // MARK: - GLOW & SHINE OVERLAY
+        .overlay(
+            Group {
+                if likeAnimationActive {
+                    // Glow effect (pulse)
+                    Rectangle()
+                        .fill(Color.white.opacity(0.25))
+                        .blur(radius: 8)
+                        .scaleEffect(1.02)
+                        .transition(.opacity)
+                        .animation(.easeOut(duration: 0.3), value: likeAnimationActive)
+                    
+                    // Shine effect (moving diagonal stripe)
+                    ShineView(shape: shape)
+                }
+            }
+        )
+        .clipShape(shape)
     }
 }
 
+struct ShineView: View {
+    let shape: StaggeredBottomShape
+    
+    @State private var offsetX: CGFloat = -1.0
+    
+    var body: some View {
+        GeometryReader { geometry in
+            Rectangle()
+                .fill(
+                    LinearGradient(
+                        gradient: Gradient(stops: [
+                            .init(color: .clear, location: 0),
+                            .init(color: .white.opacity(0.6), location: 0.3),
+                            .init(color: .white.opacity(0.9), location: 0.5),
+                            .init(color: .white.opacity(0.6), location: 0.7),
+                            .init(color: .clear, location: 1)
+                        ]),
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
+                .mask(shape)      // Clips the shine to the stair‑step shape
+                .offset(x: offsetX * geometry.size.width * 1.2)
+                .onAppear {
+                    withAnimation(.easeInOut(duration: 0.7)) {
+                        offsetX = 1.0
+                    }
+                }
+        }
+    }
+}
 // MARK: - 3. THE MAIN LIST
 struct ExperienceListView: View {
     @EnvironmentObject var eventManager: EventManager

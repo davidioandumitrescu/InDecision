@@ -308,9 +308,8 @@ struct ExperienceDetailView: View {
         VStack(spacing: 12) {
             Button(action: {
                 Task {
-                    withAnimation {
-                        Task { await eventManager.toggleJoin(for: event.id, userID: authManager.userID) }
-                    }
+                    await eventManager.toggleJoin(for: event.id, userID: authManager.userID)
+                    await refreshAttendees()
                 }
             }) {
                 HStack {
@@ -329,9 +328,7 @@ struct ExperienceDetailView: View {
             
             Button(action: {
                 Task {
-                    withAnimation {
-                        Task { await eventManager.toggleSave(for: event.id, userID: authManager.userID) }
-                    }
+                    await eventManager.toggleSave(for: event.id, userID: authManager.userID)
                 }
             }) {
                 Label(isSaved ? "Saved" : "Save for later", systemImage: isSaved ? "heart.fill" : "heart")
@@ -345,6 +342,14 @@ struct ExperienceDetailView: View {
             }
             .padding(.bottom, 50)
         }
+    }
+    
+    // MARK: - Helpers
+    
+    private func refreshAttendees() async {
+        isLoadingAttendees = true
+        attendees = await eventManager.getAttendees(for: currentEvent.id)
+        isLoadingAttendees = false
     }
 }
 
