@@ -363,7 +363,7 @@ struct ProfileCardSheet: View {
     let info: AttendeeCardInfo
     
     // Theme Colors
-    private let bgTeal = Color(red: 0.05, green: 0.78, blue: 0.67)
+    private let bgTeal = Color.mint
     private let btnPurple = Color(red: 0.50, green: 0.35, blue: 0.96)
     
     var body: some View {

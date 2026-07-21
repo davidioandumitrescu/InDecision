@@ -18,7 +18,7 @@ struct OnboardingView: View {
     let timer = Timer.publish(every: 4, on: .main, in: .common).autoconnect()
     
     // MARK: - Theme Colors
-    private let bgTeal = Color(red: 0.05, green: 0.78, blue: 0.67)
+    private let bgTeal = Color.mint
     private let accentGreen = Color(red: 0.20, green: 0.80, blue: 0.35)
     private let btnPurple = Color(red: 0.50, green: 0.35, blue: 0.96)
     private let darkCyan = Color(red: 0.0, green: 0.5, blue: 0.5)
