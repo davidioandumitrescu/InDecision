@@ -107,6 +107,9 @@ struct ExperienceDetailView: View {
                 .presentationDetents([.height(380)])
                 .presentationDragIndicator(.visible)
         }
+        .sheet(isPresented: $showEditSheet) {
+            ExperienceEditView(event: currentEvent)
+        }
         .task {
             attendees = await eventManager.getAttendees(for: currentEvent.id)
             isLoadingAttendees = false
@@ -131,24 +134,25 @@ struct ExperienceDetailView: View {
             Spacer()
             
             if authManager.userID == currentEvent.created_by {
-                Menu {
+                HStack(spacing: 16) {
+                    // Edit Button (Pen Icon)
                     Button(action: {
                         showEditSheet = true
                     }) {
-                        Label("Edit Event", systemImage: "pencil")
+                        Image(systemName: "pencil.circle.fill")
+                            .font(.system(size: 34))
+                            .foregroundColor(.white)
                     }
                     
-                    Button(role: .destructive, action: {
+                    // Delete Button (Trash Icon)
+                    Button(action: {
                         showDeleteAlert = true
                     }) {
-                        Label("Delete Event", systemImage: "trash")
+                        Image(systemName: "trash.circle.fill")
+                            .font(.system(size: 34))
+                            .foregroundColor(.white.opacity(0.9))
                     }
-                } label: {
-                    Image(systemName: "ellipsis.circle.fill")
-                        .font(.system(size: 38))
-                        .foregroundColor(.white)
                 }
-                .padding(.trailing, 8)
             }
             
             // 2. The Profile Button
