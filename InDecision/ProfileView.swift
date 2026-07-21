@@ -151,6 +151,102 @@ struct ProfileDestinationView: View {
     }
 }
 
+private struct InterestEditorView: View {
+    @ObservedObject var authManager: AuthManager
+    @Binding var interests: [String]
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var draftInterests: [String]
+
+    init(
+        authManager: AuthManager,
+        interests: Binding<[String]>,
+        startsWithEmptyInterest: Bool
+    ) {
+        self.authManager = authManager
+        self._interests = interests
+
+        var initialInterests = interests.wrappedValue
+        if startsWithEmptyInterest {
+            initialInterests.append("")
+        }
+        self._draftInterests = State(initialValue: initialInterests)
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    ForEach(draftInterests.indices, id: \.self) { index in
+                        HStack {
+                            TextField(
+                                "Interest",
+                                text: Binding(
+                                    get: { draftInterests[index] },
+                                    set: { draftInterests[index] = $0 }
+                                )
+                            )
+                            .textInputAutocapitalization(.words)
+
+                            Button(role: .destructive) {
+                                draftInterests.remove(at: index)
+                            } label: {
+                                Image(systemName: "trash")
+                            }
+                            .buttonStyle(.borderless)
+                            .accessibilityLabel("Delete interest")
+                        }
+                    }
+
+                    Button {
+                        draftInterests.append("")
+                    } label: {
+                        Label("Add Interest", systemImage: "plus")
+                    }
+                } footer: {
+                    Text("Empty and duplicate interests are removed when you save.")
+                }
+
+                if !authManager.errorMessage.isEmpty {
+                    Section {
+                        Text(authManager.errorMessage)
+                            .foregroundColor(.red)
+                    }
+                }
+            }
+            .navigationTitle("Edit Interests")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                    .disabled(authManager.isLoading)
+                }
+
+                ToolbarItem(placement: .confirmationAction) {
+                    Button {
+                        Task {
+                            if await authManager.updateInterests(draftInterests) {
+                                interests = authManager.profile?.interests ?? []
+                                dismiss()
+                            }
+                        }
+                    } label: {
+                        if authManager.isLoading {
+                            ProgressView()
+                        } else {
+                            Text("Save")
+                        }
+                    }
+                    .disabled(authManager.isLoading)
+                }
+            }
+        }
+        .interactiveDismissDisabled(authManager.isLoading)
+    }
+}
+
 struct ProfileSetupView: View {
     @EnvironmentObject var authManager: AuthManager
     @State private var username = ""
@@ -220,7 +316,9 @@ struct ProfileView: View {
     private let btnPurple = Color(red: 0.45, green: 0.35, blue: 0.95)
     
     // UI State
-    @State private var interests: [String] = ["Sport", "Adventure"]
+    @State private var interests: [String] = []
+    @State private var isEditingInterests = false
+    @State private var shouldAddInterest = false
     
     // Computed Data
     var myEvents: [DetailedEvent] {
@@ -282,6 +380,19 @@ struct ProfileView: View {
             }
         }
         .toolbar(.hidden, for: .navigationBar)
+        .onAppear {
+            interests = authManager.profile?.interests ?? []
+        }
+        .onChange(of: authManager.profile?.interests) { _, updatedInterests in
+            interests = updatedInterests ?? []
+        }
+        .sheet(isPresented: $isEditingInterests) {
+            InterestEditorView(
+                authManager: authManager,
+                interests: $interests,
+                startsWithEmptyInterest: shouldAddInterest
+            )
+        }
     }
     
     // MARK: - SUBSECTIONS
@@ -361,20 +472,26 @@ struct ProfileView: View {
                 .foregroundColor(.black.opacity(0.6))
             
             HStack(spacing: 10) {
-                ForEach(interests, id: \.self) { interest in
-                    Text(interest)
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 8)
-                        .background(Color.black.opacity(0.3))
-                        .clipShape(Capsule())
+                ForEach(Array(interests.enumerated()), id: \.offset) { _, interest in
+                    Button {
+                        shouldAddInterest = false
+                        isEditingInterests = true
+                    } label: {
+                        Text(interest)
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 8)
+                            .background(Color.black.opacity(0.3))
+                            .clipShape(Capsule())
+                    }
+                    .buttonStyle(.plain)
                 }
                 
                 // "Add Tag" Button
                 Button(action: {
-                    // Placeholder for adding a new tag functionality
-                    interests.append("New Tag")
+                    shouldAddInterest = true
+                    isEditingInterests = true
                 }) {
                     Image(systemName: "plus")
                         .font(.system(size: 14, weight: .bold))
@@ -383,6 +500,13 @@ struct ProfileView: View {
                         .background(Color.white.opacity(0.2))
                         .clipShape(Circle())
                 }
+                .accessibilityLabel("Add interest")
+            }
+
+            if !authManager.errorMessage.isEmpty {
+                Text(authManager.errorMessage)
+                    .font(.caption)
+                    .foregroundColor(.red)
             }
         }
     }
