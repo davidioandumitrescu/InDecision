@@ -85,6 +85,7 @@ struct Profile: Identifiable, Codable {
     let username: String
     let full_name: String?
     let avatar_url: String?
+    let interests: [String]?
 }
 
 struct SavedEvent: Codable {

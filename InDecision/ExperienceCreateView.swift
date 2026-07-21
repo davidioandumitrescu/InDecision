@@ -1616,11 +1616,6 @@ struct ExperienceCreateView: View {
             sectionTitle("At this time:")
 
             HStack {
-                Text(formattedTime)
-                    .font(.system(size: 18, weight: .bold))
-                    .foregroundColor(.white)
-                    
-                Spacer()
                 
                 ZStack {
                     DatePicker(
@@ -1636,6 +1631,9 @@ struct ExperienceCreateView: View {
                         checkUnsavedChanges()
                     }
                 }
+                
+                Spacer()
+                
             }
             .padding(16)
             .background(Color.black.opacity(0.2))
@@ -2009,7 +2007,7 @@ struct ExperienceCreateView: View {
                 connectionTarget: connectionTarget,
                 minPeople: minPeople,
                 maxPeople: maxPeople,
-                selectedDays: Array(selectedDays).sorted(),
+                selectedDays: Array(selectedDays),
                 time: time,
                 imgUrl: "", // Temp string since it's commented out
                 description: "Description currently disabled",

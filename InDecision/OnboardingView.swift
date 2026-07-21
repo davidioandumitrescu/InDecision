@@ -57,10 +57,6 @@ struct OnboardingView: View {
                         .foregroundColor(.white)
                         
                         Spacer()
-                        
-                        Image(systemName: "person.crop.circle.fill")
-                            .font(.title)
-                            .foregroundColor(.white)
                     }
                     .padding(.horizontal, 24)
                     .padding(.top, 16)

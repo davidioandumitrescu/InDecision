@@ -346,4 +346,36 @@ class EventManager: ObservableObject {
             }
         }
     
+    func getAttendees(for eventID: UUID) async -> [Profile] {
+            do {
+                // 1. Get all the joined records for this specific event
+                let joinedEvents: [JoinedEvent] = try await SupabaseManager.shared.client
+                    .from("joined_events")
+                    .select()
+                    .eq("event_id", value: eventID.uuidString)
+                    .execute()
+                    .value
+                
+                // Extract just the user IDs
+                let userIDs = joinedEvents.map(\.userID.uuidString)
+                
+                // If no one is joined (shouldn't happen since host auto-joins, but good safety check), return empty
+                guard !userIDs.isEmpty else { return [] }
+                
+                // 2. Fetch the actual user profiles that match those IDs
+                let profiles: [Profile] = try await SupabaseManager.shared.client
+                    .from("profiles")
+                    .select()
+                    .in("id", values: userIDs)
+                    .execute()
+                    .value
+                
+                return profiles
+                
+            } catch {
+                print("❌ Failed to fetch attendees:", error.localizedDescription)
+                return []
+            }
+        }
+    
 }
