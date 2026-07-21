@@ -26,6 +26,95 @@ struct ProfileDestinationView: View {
     }
 }
 
+private struct InterestEditorView: View {
+    @ObservedObject var authManager: AuthManager
+    @Binding var interests: [String]
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var draftInterests: [String]
+
+    init(
+        authManager: AuthManager,
+        interests: Binding<[String]>,
+        startsWithEmptyInterest: Bool
+    ) {
+        self.authManager = authManager
+        self._interests = interests
+
+        var initialInterests = interests.wrappedValue
+        if startsWithEmptyInterest {
+            initialInterests.append("")
+        }
+        self._draftInterests = State(initialValue: initialInterests)
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    ForEach(draftInterests.indices, id: \.self) { index in
+                        TextField(
+                            "Interest",
+                            text: Binding(
+                                get: { draftInterests[index] },
+                                set: { draftInterests[index] = $0 }
+                            )
+                        )
+                        .textInputAutocapitalization(.words)
+                    }
+                    .onDelete { offsets in
+                        draftInterests.remove(atOffsets: offsets)
+                    }
+
+                    Button {
+                        draftInterests.append("")
+                    } label: {
+                        Label("Add Interest", systemImage: "plus")
+                    }
+                } footer: {
+                    Text("Empty and duplicate interests are removed when you save.")
+                }
+
+                if !authManager.errorMessage.isEmpty {
+                    Section {
+                        Text(authManager.errorMessage)
+                            .foregroundColor(.red)
+                    }
+                }
+            }
+            .navigationTitle("Edit Interests")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                    .disabled(authManager.isLoading)
+                }
+
+                ToolbarItem(placement: .confirmationAction) {
+                    Button {
+                        Task {
+                            if await authManager.updateInterests(draftInterests) {
+                                interests = authManager.profile?.interests ?? []
+                                dismiss()
+                            }
+                        }
+                    } label: {
+                        if authManager.isLoading {
+                            ProgressView()
+                        } else {
+                            Text("Save")
+                        }
+                    }
+                    .disabled(authManager.isLoading)
+                }
+            }
+        }
+        .interactiveDismissDisabled(authManager.isLoading)
+    }
+}
+
 struct ProfileSetupView: View {
     @EnvironmentObject var authManager: AuthManager
     @State private var username = ""
@@ -84,6 +173,90 @@ struct ProfileSetupView: View {
 
 // MARK: - NEW PROFILE VIEW
 
+private struct FlowLayout: Layout {
+    let horizontalSpacing: CGFloat
+    let verticalSpacing: CGFloat
+
+    func sizeThatFits(
+        proposal: ProposedViewSize,
+        subviews: Subviews,
+        cache: inout ()
+    ) -> CGSize {
+        let rows = makeRows(maxWidth: proposal.width ?? .infinity, subviews: subviews)
+        let contentWidth = rows.map(\.width).max() ?? 0
+        let contentHeight = rows.reduce(0) { $0 + $1.height }
+            + verticalSpacing * CGFloat(max(rows.count - 1, 0))
+
+        return CGSize(
+            width: proposal.width ?? contentWidth,
+            height: contentHeight
+        )
+    }
+
+    func placeSubviews(
+        in bounds: CGRect,
+        proposal: ProposedViewSize,
+        subviews: Subviews,
+        cache: inout ()
+    ) {
+        let rows = makeRows(maxWidth: bounds.width, subviews: subviews)
+        var y = bounds.minY
+
+        for row in rows {
+            var x = bounds.minX
+
+            for item in row.items {
+                item.subview.place(
+                    at: CGPoint(x: x, y: y + (row.height - item.size.height) / 2),
+                    anchor: .topLeading,
+                    proposal: ProposedViewSize(item.size)
+                )
+                x += item.size.width + horizontalSpacing
+            }
+
+            y += row.height + verticalSpacing
+        }
+    }
+
+    private func makeRows(maxWidth: CGFloat, subviews: Subviews) -> [Row] {
+        var rows: [Row] = []
+        var currentRow = Row()
+
+        for subview in subviews {
+            let size = subview.sizeThatFits(.unspecified)
+            let requiredWidth = currentRow.items.isEmpty
+                ? size.width
+                : currentRow.width + horizontalSpacing + size.width
+
+            if !currentRow.items.isEmpty, requiredWidth > maxWidth {
+                rows.append(currentRow)
+                currentRow = Row()
+            }
+
+            currentRow.items.append(Item(subview: subview, size: size))
+            currentRow.width += (currentRow.items.count == 1 ? 0 : horizontalSpacing) + size.width
+            currentRow.height = max(currentRow.height, size.height)
+        }
+
+        if !currentRow.items.isEmpty {
+            rows.append(currentRow)
+        }
+
+        return rows
+    }
+
+    private struct Item {
+        let subview: LayoutSubview
+        let size: CGSize
+    }
+
+    private struct Row {
+        var items: [Item] = []
+        var width: CGFloat = 0
+        var height: CGFloat = 0
+    }
+}
+
 struct ProfileView: View {
     @EnvironmentObject var authManager: AuthManager
     @EnvironmentObject var eventManager: EventManager
@@ -95,7 +268,9 @@ struct ProfileView: View {
     private let btnPurple = Color(red: 0.45, green: 0.35, blue: 0.95)
     
     // UI State
-    @State private var interests: [String] = ["Sport", "Adventure"]
+    @State private var interests: [String] = []
+    @State private var isEditingInterests = false
+    @State private var shouldAddInterest = false
     
     // Computed Data
     var myEvents: [DetailedEvent] {
@@ -157,6 +332,19 @@ struct ProfileView: View {
             }
         }
         .toolbar(.hidden, for: .navigationBar)
+        .onAppear {
+            interests = authManager.profile?.interests ?? []
+        }
+        .onChange(of: authManager.profile?.interests) { _, updatedInterests in
+            interests = updatedInterests ?? []
+        }
+        .sheet(isPresented: $isEditingInterests) {
+            InterestEditorView(
+                authManager: authManager,
+                interests: $interests,
+                startsWithEmptyInterest: shouldAddInterest
+            )
+        }
     }
     
     // MARK: - SUBSECTIONS
@@ -231,21 +419,29 @@ struct ProfileView: View {
                 .font(.system(size: 14, weight: .bold))
                 .foregroundColor(.black.opacity(0.6))
             
-            HStack(spacing: 10) {
-                ForEach(interests, id: \.self) { interest in
-                    Text(interest)
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 8)
-                        .background(Color.black.opacity(0.3))
-                        .clipShape(Capsule())
+            FlowLayout(horizontalSpacing: 10, verticalSpacing: 10) {
+                ForEach(Array(interests.enumerated()), id: \.offset) { _, interest in
+                    Button {
+                        shouldAddInterest = false
+                        isEditingInterests = true
+                    } label: {
+                        Text(interest)
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(.white)
+                            .lineLimit(1)
+                            .fixedSize(horizontal: true, vertical: false)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 8)
+                            .background(Color.black.opacity(0.3))
+                            .clipShape(Capsule())
+                    }
+                    .buttonStyle(.plain)
                 }
                 
                 // "Add Tag" Button
                 Button(action: {
-                    // Placeholder for adding a new tag functionality
-                    interests.append("New Tag")
+                    shouldAddInterest = true
+                    isEditingInterests = true
                 }) {
                     Image(systemName: "plus")
                         .font(.system(size: 14, weight: .bold))
@@ -254,6 +450,13 @@ struct ProfileView: View {
                         .background(Color.white.opacity(0.2))
                         .clipShape(Circle())
                 }
+                .accessibilityLabel("Add interest")
+            }
+
+            if !authManager.errorMessage.isEmpty {
+                Text(authManager.errorMessage)
+                    .font(.caption)
+                    .foregroundColor(.red)
             }
         }
     }
