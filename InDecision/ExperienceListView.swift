@@ -48,6 +48,9 @@ struct StaggeredBottomShape: Shape {
 
 // MARK: - 2. THE CARD VIEW
 struct StaggeredEventCard: View {
+    @EnvironmentObject var eventManager: EventManager
+    @EnvironmentObject var authManager: AuthManager
+
     var event: DetailedEvent
     var bgColor: Color
     var nextColor: Color
@@ -71,6 +74,9 @@ struct StaggeredEventCard: View {
                     .bold()
                     .foregroundColor(.white)
                     .lineSpacing(4)
+                    .onTapGesture(count: 2) {
+                        Task { await eventManager.toggleSave(for: event.id, userID: authManager.userID) }
+                    }
             }
             .buttonStyle(PlainButtonStyle())
             // Tags and Icons row
