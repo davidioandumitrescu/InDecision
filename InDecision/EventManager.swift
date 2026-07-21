@@ -83,12 +83,12 @@ class EventManager: ObservableObject {
                 .insert(event)
                 .execute()
             //automatically save and join the event you created
-//            let joinEvent = JoinedEvent(userID: event.created_by, eventID: event.id)
-//            
-//            try await SupabaseManager.shared.client
-//                .from("joined_events")
-//                .insert(joinEvent)
-//                .execute()
+            let joinEvent = JoinedEvent(userID: event.created_by, eventID: event.id)
+            
+            try await SupabaseManager.shared.client
+                .from("joined_events")
+                .insert(joinEvent)
+                .execute()
             
             // Add it to our local Set so the button instantly says "You are going"
             //joinedEventIDs.insert(event.id)
@@ -162,6 +162,15 @@ class EventManager: ObservableObject {
                 .execute()
 
             errorMessage = ""
+            
+            if let index = events.firstIndex(where: { $0.id == eventId }) {
+                events[index].likeCount += 1
+                try await SupabaseManager.shared.client
+                    .from("events")
+                    .update(["like_count": events[index].likeCount])
+                    .eq("id", value: eventId.uuidString)
+                    .execute()
+            }
         } catch {
             errorMessage = error.localizedDescription
             print("❌ Failed to save event:", error)
@@ -176,7 +185,17 @@ class EventManager: ObservableObject {
                 .eq("user_id", value: userID.uuidString)
                 .eq("event_id", value: eventId.uuidString)
                 .execute()
-
+            
+            // Bump the joined counter down
+            if let index = events.firstIndex(where: { $0.id == eventId }) {
+                events[index].likeCount = max(0, events[index].likeCount - 1)
+                try await SupabaseManager.shared.client
+                    .from("events")
+                    .update(["like_count": events[index].likeCount])
+                    .eq("id", value: eventId.uuidString)
+                    .execute()
+            }
+            
             savedEventIDs.remove(eventId)
             errorMessage = ""
         } catch {
@@ -324,6 +343,38 @@ class EventManager: ObservableObject {
             } catch {
                 errorMessage = error.localizedDescription
                 print("❌ Failed to delete event:", error)
+            }
+        }
+    
+    func getAttendees(for eventID: UUID) async -> [Profile] {
+            do {
+                // 1. Get all the joined records for this specific event
+                let joinedEvents: [JoinedEvent] = try await SupabaseManager.shared.client
+                    .from("joined_events")
+                    .select()
+                    .eq("event_id", value: eventID.uuidString)
+                    .execute()
+                    .value
+                
+                // Extract just the user IDs
+                let userIDs = joinedEvents.map(\.userID.uuidString)
+                
+                // If no one is joined (shouldn't happen since host auto-joins, but good safety check), return empty
+                guard !userIDs.isEmpty else { return [] }
+                
+                // 2. Fetch the actual user profiles that match those IDs
+                let profiles: [Profile] = try await SupabaseManager.shared.client
+                    .from("profiles")
+                    .select()
+                    .in("id", values: userIDs)
+                    .execute()
+                    .value
+                
+                return profiles
+                
+            } catch {
+                print("❌ Failed to fetch attendees:", error.localizedDescription)
+                return []
             }
         }
     

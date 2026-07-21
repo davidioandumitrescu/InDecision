@@ -10,46 +10,89 @@ import SwiftUI
 struct SignInView: View {
     @EnvironmentObject var authManager: AuthManager
 
+    // Theme Colors matching the rest of the app
+    private let bgTeal = Color(red: 0.05, green: 0.78, blue: 0.67)
+    private let accentGreen = Color(red: 0.20, green: 0.80, blue: 0.35)
+
     var body: some View {
-        VStack(spacing: 20) {
-            Text("Welcome")
-                .font(.largeTitle)
-                .bold()
-
-            Text("Sign in to create and join experiences")
-                .foregroundColor(.secondary)
-
-            Button {
-                Task {
-                    await authManager.signInWithGoogle()
-                }
-            } label: {
+        ZStack {
+            // 1. Background Layers
+            bgTeal.ignoresSafeArea()
+            
+            // Bottom Right Staggered Shape
+            VStack {
+                Spacer()
                 HStack {
-                    if authManager.isLoading {
-                        ProgressView()
-                    } else {
-                        Image(systemName: "g.circle.fill")
-                        Text("Continue with Google")
+                    Spacer()
+                    VStack(alignment: .trailing, spacing: 0) {
+                        accentGreen.frame(width: 130, height: 70)
+                        accentGreen.frame(width: 250, height: 70)
                     }
                 }
-                .frame(maxWidth: .infinity)
             }
-            .buttonStyle(.borderedProminent)
-            .disabled(authManager.isLoading)
+            .ignoresSafeArea(edges: .bottom)
 
-            if !authManager.errorMessage.isEmpty {
-                Text(authManager.errorMessage)
-                    .foregroundColor(.red)
+            // 2. Main Content
+            VStack(spacing: 24) {
+                Spacer()
+                
+                // App Logo/Icon representation
+                Image(systemName: "person.3.fill")
+                    .font(.system(size: 60))
+                    .foregroundColor(.white)
+                    .padding(.bottom, 10)
+
+                Text("Welcome to Bloop")
+                    .font(.system(size: 32, weight: .bold))
+                    .foregroundColor(.white)
+
+                Text("Sign in to create and join experiences")
+                    .font(.body)
+                    .foregroundColor(.white.opacity(0.8))
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal)
+
+                Spacer()
+
+                // Google Sign-In Button
+                Button {
+                    Task {
+                        await authManager.signInWithGoogle()
+                    }
+                } label: {
+                    HStack(spacing: 10) {
+                        if authManager.isLoading {
+                            ProgressView()
+                                .tint(.black)
+                        } else {
+                            Image(systemName: "g.circle.fill")
+                                .font(.system(size: 20))
+                            Text("Continue with Google")
+                                .font(.headline)
+                        }
+                    }
+                    .foregroundColor(.black)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 56)
+                    .background(Color.white)
+                    .clipShape(Capsule())
+                    .shadow(color: .black.opacity(0.15), radius: 10, y: 5)
+                }
+                .disabled(authManager.isLoading)
+                .opacity(authManager.isLoading ? 0.7 : 1)
+                .padding(.horizontal, 24)
+
+                if !authManager.errorMessage.isEmpty {
+                    Text(authManager.errorMessage)
+                        .font(.caption)
+                        .foregroundColor(.yellow)
+                        .padding(.horizontal, 24)
+                }
+                
+                Spacer()
             }
+            .padding(.vertical)
         }
-        .padding()
-        .navigationTitle("Sign In")
-    }
-}
-
-#Preview {
-    NavigationStack {
-        SignInView()
-            .environmentObject(AuthManager())
+        .toolbar(.hidden, for: .navigationBar)
     }
 }

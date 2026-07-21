@@ -135,7 +135,7 @@ struct ExperienceListView: View {
     // MARK: - Filter Logic (Now uses eventManager.events!)
     var filterEvents: [DetailedEvent] {
         eventManager.events.filter { event in
-            let matchesSearch = searchText.isEmpty || event.activity.localizedCaseInsensitiveContains(searchText) || event.hostName.localizedCaseInsensitiveContains(searchText)
+            let matchesSearch = searchText.isEmpty || event.generatedTitle.localizedCaseInsensitiveContains(searchText) || event.hostName.localizedCaseInsensitiveContains(searchText)
             
             let matchesSegment: Bool
             if selectedFilter == 1 { matchesSegment = !event.isSolid }
