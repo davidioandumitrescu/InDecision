@@ -132,6 +132,15 @@ class EventManager: ObservableObject {
                 .from("saved_events")
                 .insert(savedEvent)
                 .execute()
+            
+            if let index = events.firstIndex(where: { $0.id == eventId }) {
+                events[index].likeCount += 1
+                try await SupabaseManager.shared.client
+                    .from("events")
+                    .update(["like_count": events[index].likeCount])
+                    .eq("id", value: eventId.uuidString)
+                    .execute()
+            }
 
             savedEventIDs.insert(eventId)
             errorMessage = ""
@@ -149,6 +158,15 @@ class EventManager: ObservableObject {
                 .eq("user_id", value: userID.uuidString)
                 .eq("event_id", value: eventId.uuidString)
                 .execute()
+            
+            if let index = events.firstIndex(where: { $0.id == eventId }) {
+                events[index].likeCount = max(0, events[index].likeCount - 1)
+                try await SupabaseManager.shared.client
+                    .from("events")
+                    .update(["like_count": events[index].likeCount])
+                    .eq("id", value: eventId.uuidString)
+                    .execute()
+            }
 
             savedEventIDs.remove(eventId)
             errorMessage = ""
@@ -213,7 +231,7 @@ class EventManager: ObservableObject {
                     events[index].joinedCount += 1
                     try await SupabaseManager.shared.client
                         .from("events")
-                        .update(["joinedCount": events[index].joinedCount])
+                        .update(["joined_count": events[index].joinedCount])
                         .eq("id", value: eventId.uuidString)
                         .execute()
                 }
@@ -241,7 +259,7 @@ class EventManager: ObservableObject {
                     events[index].joinedCount = max(0, events[index].joinedCount - 1)
                     try await SupabaseManager.shared.client
                         .from("events")
-                        .update(["joinedCount": events[index].joinedCount])
+                        .update(["joined_count": events[index].joinedCount])
                         .eq("id", value: eventId.uuidString)
                         .execute()
                 }
