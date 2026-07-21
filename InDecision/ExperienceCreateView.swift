@@ -2007,7 +2007,7 @@ struct ExperienceCreateView: View {
                 connectionTarget: connectionTarget,
                 minPeople: minPeople,
                 maxPeople: maxPeople,
-                selectedDays: Array(selectedDays).sorted(),
+                selectedDays: Array(selectedDays),
                 time: time,
                 imgUrl: "", // Temp string since it's commented out
                 description: "Description currently disabled",

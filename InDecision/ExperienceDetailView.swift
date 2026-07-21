@@ -55,80 +55,85 @@ struct ExperienceDetailView: View {
     }
     
     var body: some View {
-        ZStack {
-            // 1. Background Layers
-            bgColor.ignoresSafeArea()
-            
-            VStack {
-                Spacer()
-                HStack {
+            ZStack(alignment: .top) {
+                // 1. Background Layers
+                bgColor.ignoresSafeArea()
+                 
+                VStack {
                     Spacer()
-                    VStack(alignment: .trailing, spacing: 0) {
-                        nextColor.frame(width: 125, height: 60)
-                        nextColor.frame(width: 250, height: 60)
+                    HStack {
+                        Spacer()
+                        VStack(alignment: .trailing, spacing: 0) {
+                            nextColor.frame(width: 125, height: 60)
+                            nextColor.frame(width: 250, height: 60)
+                        }
                     }
                 }
-            }
-            .ignoresSafeArea(edges: .bottom)
-            
-            // 2. Core Content Layer
-            VStack(alignment: .leading, spacing: 24) {
-                headerBar
-                
+                .ignoresSafeArea(edges: .bottom)
+                 
+                // 2. Core Content Layer (ScrollView with top padding)
                 ScrollView(.vertical, showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 22) {
                         
+                        // Invisible spacer so the header doesn't cover your text
+                        Spacer().frame(height: 60)
+                         
                         Text("\(Int(currentEvent.maxPeople) - currentEvent.joinedCount) more people to reach goal!")
                             .font(.system(size: 18, weight: .bold))
                             .foregroundColor(.black.opacity(0.6))
                             .padding(.top, 10)
-                        
+                         
                         event.stylizedPreview
                             .font(.system(size: 32, weight: .bold))
                             .foregroundColor(.white)
                             .lineSpacing(6)
-                        
+                         
                         tagsSection
                         infoRowsSection
                         socialStatsBar
                         attendeesAvatersSection
-                        
+                         
                         Spacer(minLength: 40)
                         actionButtonsArea
                     }
+                    .padding(.horizontal, 24)
                 }
+                  
+                // 3. Pinned Header Bar at the very top of the ZStack
+                headerBar
+                    .padding(.horizontal, 24)
+                    .padding(.top, 8)
+                    .zIndex(10)
             }
-            .padding(.horizontal, 24)
+            .toolbar(.hidden, for: .navigationBar)
+            .sheet(item: $selectedCardInfo) { info in
+                ProfileCardSheet(info: info)
+                    .presentationDetents([.height(380)])
+                    .presentationDragIndicator(.visible)
+            }
+            .sheet(isPresented: $showEditSheet) {
+                ExperienceEditView(event: currentEvent)
+            }
+            .task {
+                attendees = await eventManager.getAttendees(for: currentEvent.id)
+                isLoadingAttendees = false
+            }
         }
-        .toolbar(.hidden, for: .navigationBar)
-        // Attach the bottom sheet for the profile card here!
-        .sheet(item: $selectedCardInfo) { info in
-            ProfileCardSheet(info: info)
-                .presentationDetents([.height(380)])
-                .presentationDragIndicator(.visible)
-        }
-        .sheet(isPresented: $showEditSheet) {
-            ExperienceEditView(event: currentEvent)
-        }
-        .task {
-            attendees = await eventManager.getAttendees(for: currentEvent.id)
-            isLoadingAttendees = false
-        }
-    }
     
     // MARK: - Subsections
     
     private var headerBar: some View {
         HStack {
-            // 1. The Custom Back Button
             Button(action: {
                 dismiss() // This safely takes you back to the list!
             }) {
-                HStack(spacing: 6) {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 22, weight: .bold))
-                }
-                .foregroundColor(.white)
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundColor(.black)
+                    .frame(width: 44, height: 44)
+                    .background(Color.white.opacity(0.9))
+                    .clipShape(Circle())
+                    .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
             }
             
             Spacer()
