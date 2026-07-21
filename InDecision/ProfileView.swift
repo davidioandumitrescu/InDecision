@@ -516,8 +516,7 @@ struct ProfileView: View {
             }
 
             let path = "\(userID.uuidString)/avatar.jpg"
-            
-            
+
             try await SupabaseManager.shared.client.storage
                 .from("avatars")
                 .upload(
@@ -528,14 +527,15 @@ struct ProfileView: View {
                         upsert: true
                     )
                 )
-                
-            
+
             print("Uploading path:", path)
             print("User ID:", userID.uuidString)
 
             let url = try SupabaseManager.shared.client.storage
                 .from("avatars")
                 .getPublicURL(path: path)
+
+            SupabaseManager.shared.invalidateAvatarCache(for: url.absoluteString)   // <-- new
 
             try await SupabaseManager.shared.client
                 .from("profiles")
@@ -550,7 +550,7 @@ struct ProfileView: View {
             }
 
             print("✅ Avatar uploaded")
-            
+
             await authManager.refreshSession()
 
         } catch {

@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct ExperienceDetailView: View {
+
     let event: DetailedEvent
     
     // Dependencies
@@ -276,16 +277,7 @@ struct ExperienceDetailView: View {
                                 VStack(spacing: 6) {
                                     ZStack(alignment: .bottomTrailing) {
                                         // The Gray Circle Placeholder
-                                        Image(systemName: "person.crop.circle.fill")
-                                            .resizable()
-                                            .frame(width: 54, height: 54)
-                                            .foregroundColor(.white.opacity(0.9))
-                                            .background(Circle().fill(Color.gray))
-                                            .clipShape(Circle())
-                                            // Purple border only for the host
-                                            .overlay(
-                                                Circle().stroke(isHost ? buttonPurple : Color.clear, lineWidth: isHost ? 3 : 0)
-                                            )
+                                        AvatarView(userID: user.id)
                                         
                                         // Verified Badge for Host
                                         if isHost {
@@ -379,7 +371,7 @@ struct ProfileCardSheet: View {
         VStack(spacing: 20) {
             // Header Image
             ZStack(alignment: .bottomTrailing) {
-                Image(systemName: "person.crop.circle.fill")
+                    Image(systemName: "person.crop.circle.fill")
                     .resizable()
                     .frame(width: 90, height: 90)
                     .foregroundColor(.white.opacity(0.9))
