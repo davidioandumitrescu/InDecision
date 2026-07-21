@@ -276,7 +276,7 @@ struct ExperienceDetailView: View {
                                 VStack(spacing: 6) {
                                     ZStack(alignment: .bottomTrailing) {
                                         // The Gray Circle Placeholder
-                                        AvatarView(userID: user.id)
+                                        AvatarView(userID: user.id, size: 60)
                                         
                                         // Verified Badge for Host
                                         if isHost {
@@ -370,7 +370,7 @@ struct ProfileCardSheet: View {
         VStack(spacing: 20) {
             // Header Image
             ZStack(alignment: .bottomTrailing) {
-                AvatarView(userID: info.id)
+                AvatarView(userID: info.id, size: 80)
                 
                 if info.isHost {
                     Image(systemName: "checkmark.seal.fill")
