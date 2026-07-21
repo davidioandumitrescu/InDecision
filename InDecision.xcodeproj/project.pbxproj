@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		8D096EE6300DE16A00C3CE65 /* Sliders in Frameworks */ = {isa = PBXBuildFile; productRef = 8D096EE5300DE16A00C3CE65 /* Sliders */; };
 		8DADA4053009C7CC005A865B /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = 8DADA4043009C7CC005A865B /* Supabase */; };
 /* End PBXBuildFile section */
 
@@ -28,6 +29,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				8DADA4053009C7CC005A865B /* Supabase in Frameworks */,
+				8D096EE6300DE16A00C3CE65 /* Sliders in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -71,6 +73,7 @@
 			name = InDecision;
 			packageProductDependencies = (
 				8DADA4043009C7CC005A865B /* Supabase */,
+				8D096EE5300DE16A00C3CE65 /* Sliders */,
 			);
 			productName = InDecision;
 			productReference = 50B384FA3008A70300855323 /* InDecision.app */;
@@ -102,6 +105,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				8DADA4033009C7CC005A865B /* XCRemoteSwiftPackageReference "supabase-swift" */,
+				8D096EE4300DE16A00C3CE65 /* XCRemoteSwiftPackageReference "swiftui-sliders" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 50B384FB3008A70300855323 /* Products */;
@@ -262,9 +266,11 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = KXYY8NAKBZ;
+				DEVELOPMENT_TEAM = 48PF2CQ6MB;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Bloop;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.entertainment";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -275,7 +281,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = au.com.dumitrescu.InDecision;
+				PRODUCT_BUNDLE_IDENTIFIER = com.mireu.Bloop;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -294,9 +300,11 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = KXYY8NAKBZ;
+				DEVELOPMENT_TEAM = 48PF2CQ6MB;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Bloop;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.entertainment";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -307,7 +315,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = au.com.dumitrescu.InDecision;
+				PRODUCT_BUNDLE_IDENTIFIER = com.mireu.Bloop;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -343,6 +351,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		8D096EE4300DE16A00C3CE65 /* XCRemoteSwiftPackageReference "swiftui-sliders" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/spacenation/swiftui-sliders";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.1.0;
+			};
+		};
 		8DADA4033009C7CC005A865B /* XCRemoteSwiftPackageReference "supabase-swift" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/supabase/supabase-swift";
@@ -354,6 +370,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		8D096EE5300DE16A00C3CE65 /* Sliders */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8D096EE4300DE16A00C3CE65 /* XCRemoteSwiftPackageReference "swiftui-sliders" */;
+			productName = Sliders;
+		};
 		8DADA4043009C7CC005A865B /* Supabase */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 8DADA4033009C7CC005A865B /* XCRemoteSwiftPackageReference "supabase-swift" */;
