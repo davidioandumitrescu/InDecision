@@ -373,8 +373,28 @@ struct ExperienceListView: View {
                             .padding(.horizontal)
                         }
                     }
+                    .padding(.horizontal)
                     .padding(.top, 8)
-                    .padding(.bottom, 12)
+                    .padding(.bottom, 24)
+                    .frame(maxWidth: .infinity)
+                    .background {
+                        Rectangle()
+                            .fill(.ultraThinMaterial)
+                            .mask {
+                                LinearGradient(
+                                    stops: [
+                                        .init(color: .black, location: 0.0),
+                                        .init(color: .black, location: 0.65),
+                                        .init(color: .black.opacity(0.7), location: 0.82),
+                                        .init(color: .black.opacity(0.25), location: 0.94),
+                                        .init(color: .clear, location: 1.0)
+                                    ],
+                                    startPoint: .top,
+                                    endPoint: .bottom
+                                )
+                            }
+                            .ignoresSafeArea(edges: .top)
+                    }
                     .zIndex(1)
                 }
                 .frame(width: geo.size.width, height: geo.size.height)
