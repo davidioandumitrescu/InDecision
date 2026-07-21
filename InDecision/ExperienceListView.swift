@@ -283,11 +283,11 @@ struct ExperienceListView: View {
         // FETCH DATA WHEN THE VIEW LOADS
         .task {
             // Only fetch if empty to prevent unnecessary database calls every time the view appears
-            if eventManager.events.isEmpty {
+            //if eventManager.events.isEmpty {
                 await eventManager.loadEvents()
                 await eventManager.loadSavedEvents(for: authManager.userID)
                 await eventManager.loadJoinedEvents(for: authManager.userID)
-            }
+            //}
         }
     }
 }

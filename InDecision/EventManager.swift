@@ -171,6 +171,7 @@ class EventManager: ObservableObject {
         }
     }
     
+    
     func loadJoinedEvents(for userID: UUID?) async {
             guard let userID else {
                 joinedEventIDs = []
