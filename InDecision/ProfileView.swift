@@ -277,7 +277,7 @@ struct ProfileView: View {
         guard let uid = authManager.userID else { return [] }
         return eventManager.events.filter { $0.created_by == uid }
     }
-    
+       
     var historyEvents: [DetailedEvent] {
         eventManager.events.filter { eventManager.joinedEventIDs.contains($0.id) }
     }
@@ -461,24 +461,30 @@ struct ProfileView: View {
         }
     }
     
+    
     private var createdEventsSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Your Events")
                 .font(.system(size: 14, weight: .bold))
                 .foregroundColor(.black.opacity(0.6))
-            
+
             if myEvents.isEmpty {
                 Text("You haven't created any events yet.")
                     .font(.subheadline)
                     .foregroundColor(.white.opacity(0.8))
             } else {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 12) {
-                        ForEach(myEvents) { event in
-                            NavigationLink(destination: ExperienceDetailView(event: event, bgColor: bgTeal, nextColor: accentGreen)) {
-                                miniEventCard(for: event)
-                            }
+                FlowLayout(horizontalSpacing: 10, verticalSpacing: 10) {
+                    ForEach(myEvents) { event in
+                        NavigationLink {
+                            ExperienceDetailView(
+                                event: event,
+                                bgColor: bgTeal,
+                                nextColor: accentGreen
+                            )
+                        } label: {
+                            miniEventCard(for: event)
                         }
+                        .buttonStyle(.plain)
                     }
                 }
             }
@@ -490,25 +496,29 @@ struct ProfileView: View {
             Text("History")
                 .font(.system(size: 14, weight: .bold))
                 .foregroundColor(.black.opacity(0.6))
-            
+
             if historyEvents.isEmpty {
                 Text("You haven't joined any events yet.")
                     .font(.subheadline)
                     .foregroundColor(.white.opacity(0.8))
             } else {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 12) {
-                        ForEach(historyEvents) { event in
-                            NavigationLink(destination: ExperienceDetailView(event: event, bgColor: bgTeal, nextColor: accentGreen)) {
-                                miniEventCard(for: event)
-                            }
+                FlowLayout(horizontalSpacing: 10, verticalSpacing: 10) {
+                    ForEach(historyEvents) { event in
+                        NavigationLink {
+                            ExperienceDetailView(
+                                event: event,
+                                bgColor: bgTeal,
+                                nextColor: accentGreen
+                            )
+                        } label: {
+                            miniEventCard(for: event)
                         }
+                        .buttonStyle(.plain)
                     }
                 }
             }
         }
     }
-    
     private var signOutButton: some View {
         Button(action: {
             Task {
@@ -547,4 +557,11 @@ struct ProfileView: View {
         .background(Color.black.opacity(0.3))
         .clipShape(Capsule())
     }
+}
+
+
+#Preview {
+    ProfileView()
+        .environmentObject(EventManager())
+        .environmentObject(AuthManager())
 }
