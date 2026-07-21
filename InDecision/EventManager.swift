@@ -34,13 +34,16 @@ class EventManager: ObservableObject {
                 .value
 
             for index in fetchedEvents.indices {
-                let count = try await SupabaseManager.shared.client
-                    .from("saved_events")
-                    .select("*", head: true, count: .exact)
-                    .eq("event_id", value: fetchedEvents[index].id.uuidString)
+                let count: Int = try await SupabaseManager.shared.client
+                    .rpc(
+                        "get_event_save_count",
+                        params: [
+                            "event_uuid": fetchedEvents[index].id.uuidString
+                        ]
+                    )
                     .execute()
-                    .count ?? 0
-                
+                    .value
+
                 fetchedEvents[index].likeCount = count
             }
 
