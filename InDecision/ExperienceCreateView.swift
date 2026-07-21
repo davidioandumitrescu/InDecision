@@ -1370,13 +1370,7 @@ struct ExperienceCreateView: View {
     private var headerView: some View {
         HStack {
             HStack(spacing: 10) {
-                Image(systemName: "person.3.fill")
-                    .font(.system(size: 30))
-                    .foregroundColor(.white)
-
-                Text("Bloop")
-                    .font(.system(size: 32, weight: .bold))
-                    .foregroundColor(.white)
+                Image("BloopLogo-Sml")
             }
 
             Spacer()
