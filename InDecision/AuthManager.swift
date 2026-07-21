@@ -130,7 +130,8 @@ final class AuthManager: ObservableObject {
             let newProfile = Profile(
                 id: userID,
                 username: trimmedUsername,
-                full_name: trimmedFullName?.isEmpty == true ? nil : trimmedFullName
+                full_name: trimmedFullName?.isEmpty == true ? nil : trimmedFullName,
+                interests: []
             )
 
             try await client
@@ -146,6 +147,52 @@ final class AuthManager: ObservableObject {
         }
 
         isLoading = false
+    }
+
+    func updateInterests(_ interests: [String]) async -> Bool {
+        guard let userID else {
+            errorMessage = "You need to sign in before updating your interests."
+            return false
+        }
+
+        var seenInterests = Set<String>()
+        let normalizedInterests = interests.compactMap { interest -> String? in
+            let trimmedInterest = interest.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmedInterest.isEmpty else { return nil }
+
+            let comparisonKey = trimmedInterest.lowercased()
+            guard seenInterests.insert(comparisonKey).inserted else { return nil }
+            return trimmedInterest
+        }
+
+        isLoading = true
+        errorMessage = ""
+
+        do {
+            try await client
+                .from("profiles")
+                .update(["interests": normalizedInterests])
+                .eq("id", value: userID.uuidString)
+                .execute()
+
+            if let profile {
+                self.profile = Profile(
+                    id: profile.id,
+                    username: profile.username,
+                    full_name: profile.full_name,
+                    interests: normalizedInterests
+                )
+            } else {
+                await loadProfile()
+            }
+            isLoading = false
+            return true
+        } catch {
+            errorMessage = error.localizedDescription
+            print("Interests update failed:", error)
+            isLoading = false
+            return false
+        }
     }
 
     func signOut() async {
