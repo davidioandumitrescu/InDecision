@@ -239,21 +239,7 @@ struct ExperienceListView: View {
                             
                             // Profile Button
                             NavigationLink(destination: ProfileDestinationView()) {
-                                if authManager.isSignedIn, let avatarImage = authManager.avatarImage {
-                                    Image(uiImage: avatarImage)
-                                        .resizable()
-                                        .scaledToFill()
-                                        .frame(width: 40, height: 40)
-                                        .clipShape(Circle())
-                                } else if authManager.isSignedIn {
-                                    // signed in but avatar hasn't loaded / none set yet
-                                    Image(systemName: "person.crop.circle.fill")
-                                        .resizable()
-                                        .scaledToFill()
-                                        .frame(width: 40, height: 40)
-                                        .foregroundColor(.white.opacity(0.9))
-                                        .clipShape(Circle())
-                                }
+                                AvatarView(userID: authManager.userID)
                             }
                         }
                         .padding(.horizontal)
