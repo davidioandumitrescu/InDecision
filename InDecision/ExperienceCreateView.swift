@@ -1616,11 +1616,6 @@ struct ExperienceCreateView: View {
             sectionTitle("At this time:")
 
             HStack {
-                Text(formattedTime)
-                    .font(.system(size: 18, weight: .bold))
-                    .foregroundColor(.white)
-                    
-                Spacer()
                 
                 ZStack {
                     DatePicker(
@@ -1636,6 +1631,9 @@ struct ExperienceCreateView: View {
                         checkUnsavedChanges()
                     }
                 }
+                
+                Spacer()
+                
             }
             .padding(16)
             .background(Color.black.opacity(0.2))

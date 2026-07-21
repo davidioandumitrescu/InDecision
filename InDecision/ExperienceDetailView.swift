@@ -22,6 +22,9 @@ struct ExperienceDetailView: View {
     @State private var attendees: [Profile] = []
     @State private var isLoadingAttendees: Bool = true
     
+    // Card Pop-up State
+    @State private var selectedCardInfo: AttendeeCardInfo?
+    
     // Colors passed from list view
     var bgColor: Color
     var nextColor: Color
@@ -38,6 +41,17 @@ struct ExperienceDetailView: View {
     
     var currentEvent: DetailedEvent {
         eventManager.events.first(where: { $0.id == event.id }) ?? event
+    }
+    
+    var sortedAttendees: [Profile] {
+        attendees.sorted { (user1, user2) in
+            // If user1 is the host, they go first
+            if user1.id == currentEvent.created_by { return true }
+            // If user2 is the host, they go first
+            if user2.id == currentEvent.created_by { return false }
+            // Otherwise, sort alphabetically
+            return (user1.full_name ?? user1.username) < (user2.full_name ?? user2.username)
+        }
     }
     
     var body: some View {
@@ -87,9 +101,14 @@ struct ExperienceDetailView: View {
             .padding(.horizontal, 24)
         }
         .toolbar(.hidden, for: .navigationBar)
+        // Attach the bottom sheet for the profile card here!
+        .sheet(item: $selectedCardInfo) { info in
+            ProfileCardSheet(info: info)
+                .presentationDetents([.height(380)])
+                .presentationDragIndicator(.visible)
+        }
         .task {
-            // Placeholder: When you implement your DB fetch, uncomment this:
-            // attendees = await eventManager.getAttendees(for: event.id)
+            attendees = await eventManager.getAttendees(for: currentEvent.id)
             isLoadingAttendees = false
         }
     }
@@ -97,29 +116,61 @@ struct ExperienceDetailView: View {
     // MARK: - Subsections
     
     private var headerBar: some View {
-            HStack {
-                // 1. The Custom Back Button
-                Button(action: {
-                    dismiss() // This safely takes you back to the list!
-                }) {
-                    HStack(spacing: 6) {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 22, weight: .bold))
-                    }
-                    .foregroundColor(.white)
+        HStack {
+            // 1. The Custom Back Button
+            Button(action: {
+                dismiss() // This safely takes you back to the list!
+            }) {
+                HStack(spacing: 6) {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 22, weight: .bold))
                 }
-                
-                Spacer()
-                
-                // 2. The Profile Button
-                NavigationLink(destination: ProfileDestinationView()) {
-                    Image(systemName: "person.crop.circle.fill")
-                        .font(.system(size: 44))
+                .foregroundColor(.white)
+            }
+            
+            Spacer()
+            
+            if authManager.userID == currentEvent.created_by {
+                Menu {
+                    Button(action: {
+                        showEditSheet = true
+                    }) {
+                        Label("Edit Event", systemImage: "pencil")
+                    }
+                    
+                    Button(role: .destructive, action: {
+                        showDeleteAlert = true
+                    }) {
+                        Label("Delete Event", systemImage: "trash")
+                    }
+                } label: {
+                    Image(systemName: "ellipsis.circle.fill")
+                        .font(.system(size: 38))
                         .foregroundColor(.white)
                 }
+                .padding(.trailing, 8)
             }
-            .padding(.top, 10)
+            
+            // 2. The Profile Button
+            NavigationLink(destination: ProfileDestinationView()) {
+                Image(systemName: "person.crop.circle.fill")
+                    .font(.system(size: 44))
+                    .foregroundColor(.white)
+            }
         }
+        .padding(.top, 10)
+        .alert("Delete Event", isPresented: $showDeleteAlert) {
+            Button("Cancel", role: .cancel) { }
+            Button("Delete", role: .destructive) {
+                Task {
+                    await eventManager.deleteEvent(eventID: currentEvent.id)
+                    dismiss()
+                }
+            }
+        } message: {
+            Text("Are you sure you want to delete this event? This action cannot be undone.")
+        }
+    }
     
     private var tagsSection: some View {
         HStack(spacing: 10) {
@@ -189,15 +240,65 @@ struct ExperienceDetailView: View {
     }
     
     private var attendeesAvatersSection: some View {
-        HStack(spacing: 10) {
-            if isLoadingAttendees {
-                ProgressView().tint(.white)
-            } else {
-                // Placeholder loop - will show real data once eventManager.getAttendees is ready
-                ForEach(attendees) { user in
-                    Circle()
-                        .fill(Color.gray)
-                        .frame(width: 54, height: 54)
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Who's going?")
+                .font(.subheadline.bold())
+                .foregroundColor(.white.opacity(0.8))
+            
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 16) {
+                    if isLoadingAttendees {
+                        ProgressView().tint(.white)
+                            .padding(.leading, 20)
+                    } else {
+                        // Loop through our sorted real data!
+                        ForEach(sortedAttendees, id: \.id) { user in
+                            let isHost = user.id == currentEvent.created_by
+                            
+                            Button(action: {
+                                selectedCardInfo = AttendeeCardInfo(
+                                    name: user.full_name ?? user.username,
+                                    email: "No email provided",     // Placeholder
+                                    hostedCount: isHost ? 5 : 1,   // Placeholder
+                                    interests: ["Music", "Coffee"],// Placeholder
+                                    isHost: isHost
+                                )
+                            }) {
+                                VStack(spacing: 6) {
+                                    ZStack(alignment: .bottomTrailing) {
+                                        // The Gray Circle Placeholder
+                                        Image(systemName: "person.crop.circle.fill")
+                                            .resizable()
+                                            .frame(width: 54, height: 54)
+                                            .foregroundColor(.white.opacity(0.9))
+                                            .background(Circle().fill(Color.gray))
+                                            .clipShape(Circle())
+                                            // Purple border only for the host
+                                            .overlay(
+                                                Circle().stroke(isHost ? buttonPurple : Color.clear, lineWidth: isHost ? 3 : 0)
+                                            )
+                                        
+                                        // Verified Badge for Host
+                                        if isHost {
+                                            Image(systemName: "checkmark.seal.fill")
+                                                .font(.system(size: 16))
+                                                .foregroundColor(.blue)
+                                                .background(Color.white)
+                                                .clipShape(Circle())
+                                                .offset(x: 2, y: 2)
+                                        }
+                                    }
+                                    
+                                    // Name underneath
+                                    Text(user.full_name ?? user.username)
+                                        .font(.system(size: 12, weight: .medium))
+                                        .foregroundColor(.white)
+                                        .lineLimit(1)
+                                        .frame(width: 64)
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -206,9 +307,11 @@ struct ExperienceDetailView: View {
     private var actionButtonsArea: some View {
         VStack(spacing: 12) {
             Button(action: {
-                    Task {
-                        await eventManager.toggleJoin(for: event.id, userID: authManager.userID)
+                Task {
+                    withAnimation {
+                        Task { await eventManager.toggleJoin(for: event.id, userID: authManager.userID) }
                     }
+                }
             }) {
                 HStack {
                     Image(systemName: isJoined ? "checkmark.circle.fill" : "checkmark.circle")
@@ -226,19 +329,126 @@ struct ExperienceDetailView: View {
             
             Button(action: {
                 Task {
-                    await eventManager.toggleSave(for: event.id, userID: authManager.userID)
+                    withAnimation {
+                        Task { await eventManager.toggleSave(for: event.id, userID: authManager.userID) }
+                    }
                 }
             }) {
                 Label(isSaved ? "Saved" : "Save for later", systemImage: isSaved ? "heart.fill" : "heart")
                     .font(Font.body.bold())
-                    .foregroundColor(buttonPurple)
+                    .foregroundColor(isSaved ? .white : buttonPurple)
                     .frame(maxWidth: .infinity)
                     .frame(height: 54)
-                    .background(Color.white)
+                    .background(isSaved ? .pink.opacity(0.8) : Color.white)
                     .clipShape(Capsule())
                     .shadow(color: buttonPurple.opacity(0.3), radius: 8, x: 0, y: 4)
             }
             .padding(.bottom, 50)
         }
+    }
+}
+
+// MARK: - Popup Card Data & View
+
+struct AttendeeCardInfo: Identifiable {
+    let id = UUID()
+    let name: String
+    let email: String
+    let hostedCount: Int
+    let interests: [String]
+    let isHost: Bool
+}
+
+struct ProfileCardSheet: View {
+    let info: AttendeeCardInfo
+    
+    // Theme Colors
+    private let bgTeal = Color(red: 0.05, green: 0.78, blue: 0.67)
+    private let btnPurple = Color(red: 0.50, green: 0.35, blue: 0.96)
+    
+    var body: some View {
+        VStack(spacing: 20) {
+            // Header Image
+            ZStack(alignment: .bottomTrailing) {
+                Image(systemName: "person.crop.circle.fill")
+                    .resizable()
+                    .frame(width: 90, height: 90)
+                    .foregroundColor(.white.opacity(0.9))
+                    .padding(4)
+                    .background(bgTeal)
+                    .clipShape(Circle())
+                    .overlay(Circle().stroke(info.isHost ? btnPurple : Color.white.opacity(0.5), lineWidth: 4))
+                
+                if info.isHost {
+                    Image(systemName: "checkmark.seal.fill")
+                        .font(.system(size: 24))
+                        .foregroundColor(.white)
+                        .background(btnPurple)
+                        .clipShape(Circle())
+                        .offset(x: 5, y: 5)
+                }
+            }
+            .padding(.top, 30)
+            
+            // Name & Role
+            VStack(spacing: 4) {
+                Text(info.name)
+                    .font(.title2.bold())
+                    .foregroundColor(.white)
+                
+                Text(info.isHost ? "Event Host" : "Attendee")
+                    .font(.subheadline.bold())
+                    .foregroundColor(.white.opacity(0.8))
+            }
+            
+            Divider().background(Color.white.opacity(0.3)).padding(.horizontal)
+            
+            // Stats & Contact
+            VStack(alignment: .leading, spacing: 16) {
+                HStack(spacing: 12) {
+                    Image(systemName: "envelope.fill")
+                        .foregroundColor(.white)
+                        .frame(width: 24)
+                    Text(info.email)
+                        .font(.body)
+                        .foregroundColor(.white)
+                }
+                
+                HStack(spacing: 12) {
+                    Image(systemName: "calendar.badge.plus")
+                        .foregroundColor(.white)
+                        .frame(width: 24)
+                    Text("\(info.hostedCount) Events Hosted")
+                        .font(.body)
+                        .foregroundColor(.white)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 30)
+            
+            // Interests Tags
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Interests")
+                    .font(.caption.bold())
+                    .foregroundColor(.white.opacity(0.8))
+                
+                HStack {
+                    ForEach(info.interests, id: \.self) { interest in
+                        Text(interest)
+                            .font(.caption.bold())
+                            .foregroundColor(btnPurple)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 8)
+                            .background(Color.white)
+                            .clipShape(Capsule())
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 30)
+            
+            Spacer()
+        }
+        .background(bgTeal.ignoresSafeArea())
     }
 }
