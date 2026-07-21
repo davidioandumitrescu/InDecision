@@ -425,15 +425,18 @@ struct ProfileCardSheet: View {
                     .font(.caption.bold())
                     .foregroundColor(.white.opacity(0.8))
                 
-                HStack {
-                    ForEach(info.interests, id: \.self) { interest in
-                        Text(interest)
-                            .font(.caption.bold())
-                            .foregroundColor(btnPurple)
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 8)
-                            .background(Color.white)
-                            .clipShape(Capsule())
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(info.interests, id: \.self) { interest in
+                            Text(interest)
+                                .font(.caption.bold())
+                                .foregroundColor(btnPurple)
+                                .fixedSize()
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 8)
+                                .background(Color.white)
+                                .clipShape(Capsule())
+                        }
                     }
                 }
             }
