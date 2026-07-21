@@ -84,6 +84,7 @@ struct Profile: Identifiable, Codable {
     let id: UUID
     let username: String
     let full_name: String?
+    let avatar_url: String?
 }
 
 struct SavedEvent: Codable {
