@@ -66,12 +66,19 @@ final class AuthManager: ObservableObject {
         errorMessage = ""
 
         do {
-            try await client.auth.signInWithOAuth(
+            let session = try await client.auth.signInWithOAuth(
                 provider: .google,
                 redirectTo: URL(string: "indecision://login-callback")
             )
 
-            print("Google OAuth started")
+            updateSession(
+                userID: session.user.id,
+                email: session.user.email
+            )
+
+            await loadProfile()
+
+            print("Google OAuth complete:", session.user.id)
 
         } catch {
             errorMessage = error.localizedDescription
@@ -80,7 +87,6 @@ final class AuthManager: ObservableObject {
 
         isLoading = false
     }
-
 
     func signUp(email: String, password: String) async {
         isLoading = true
