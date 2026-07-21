@@ -7,19 +7,27 @@
 
 import Combine
 import Foundation
+import UIKit
 import Supabase
 
 @MainActor
 final class AuthManager: ObservableObject {
+
     @Published private(set) var isSignedIn = false
     @Published private(set) var userID: UUID?
     @Published private(set) var userEmail: String?
     @Published private(set) var profile: Profile?
+
+    @Published var avatarImage: UIImage?
+    @Published var isLoadingAvatar = false
+
     @Published private(set) var needsProfileSetup = false
     @Published var errorMessage = ""
     @Published var isLoading = false
 
     private let client = SupabaseManager.shared.client
+
+    // MARK: - Session
 
     func refreshSession() async {
         do {
@@ -29,20 +37,37 @@ final class AuthManager: ObservableObject {
         } catch {
             clearSession()
         }
+        Task {
+            do {
+                let buckets = try await SupabaseManager.shared.client.storage.listBuckets()
+                print("Buckets:", buckets.map { $0.name })
+            } catch {
+                print("List buckets failed:", error)
+            }
+        }
     }
 
     func handleOAuthCallback(url: URL) async {
         do {
             let session = try await client.auth.session(from: url)
-            updateSession(userID: session.user.id, email: session.user.email)
+
+            updateSession(
+                userID: session.user.id,
+                email: session.user.email
+            )
+
             await loadProfile()
+
             print("OAuth login complete")
+
         } catch {
             errorMessage = error.localizedDescription
             clearSession()
             print("OAuth callback failed:", error)
         }
     }
+
+    // MARK: - Authentication
 
     func signInWithGoogle() async {
         isLoading = true
@@ -53,7 +78,9 @@ final class AuthManager: ObservableObject {
                 provider: .google,
                 redirectTo: URL(string: "indecision://login-callback")
             )
+
             print("Google OAuth started")
+
         } catch {
             errorMessage = error.localizedDescription
             print("Google login failed:", error)
@@ -61,6 +88,7 @@ final class AuthManager: ObservableObject {
 
         isLoading = false
     }
+
 
     func signUp(email: String, password: String) async {
         isLoading = true
@@ -71,9 +99,16 @@ final class AuthManager: ObservableObject {
                 email: email,
                 password: password
             )
-            updateSession(userID: response.user.id, email: response.user.email)
+
+            updateSession(
+                userID: response.user.id,
+                email: response.user.email
+            )
+
             await loadProfile()
+
             print("Created user:", response.user.id)
+
         } catch {
             errorMessage = error.localizedDescription
             print(error)
@@ -82,14 +117,21 @@ final class AuthManager: ObservableObject {
         isLoading = false
     }
 
+
+    // MARK: - Profile
+
     func loadProfile() async {
+
         guard let userID else {
             profile = nil
+            avatarImage = nil
             needsProfileSetup = false
             return
         }
 
+
         do {
+
             let profiles: [Profile] = try await client
                 .from("profiles")
                 .select()
@@ -98,53 +140,123 @@ final class AuthManager: ObservableObject {
                 .execute()
                 .value
 
+
             profile = profiles.first
             needsProfileSetup = profiles.first == nil
             errorMessage = ""
+
+
+            // Automatically load avatar
+            if let avatarURL = profiles.first?.avatar_url {
+                await loadAvatar(from: avatarURL)
+            } else {
+                avatarImage = nil
+            }
+
+
         } catch {
+
             profile = nil
+            avatarImage = nil
             needsProfileSetup = true
             errorMessage = error.localizedDescription
+
             print("Profile load failed:", error)
         }
     }
 
+
+    // MARK: - Avatar Loading
+
+    func loadAvatar(from urlString: String) async {
+        guard let url = URL(string: urlString) else {
+            avatarImage = nil
+            return
+        }
+
+        isLoadingAvatar = true
+
+        do {
+            var request = URLRequest(url: url)
+            request.cachePolicy = .reloadIgnoringLocalAndRemoteCacheData
+
+            let (data, response) = try await URLSession.shared.data(for: request)
+
+            if let http = response as? HTTPURLResponse, !(200...299).contains(http.statusCode) {
+                print("❌ Avatar fetch HTTP \(http.statusCode):", String(data: data, encoding: .utf8) ?? "")
+                avatarImage = nil
+            } else if let image = UIImage(data: data) {
+                avatarImage = image
+            } else {
+                print("❌ Avatar data wasn't a decodable image (\(data.count) bytes)")
+                avatarImage = nil
+            }
+        } catch {
+            avatarImage = nil
+            print("Avatar loading failed:", error)
+        }
+
+        isLoadingAvatar = false
+    }
+
+
+
+    // MARK: - Create Profile
+
     func createProfile(username: String, fullName: String?) async {
+
         guard let userID else {
             errorMessage = "You need to sign in before creating a profile."
             return
         }
 
-        let trimmedUsername = username.trimmingCharacters(in: .whitespacesAndNewlines)
-        let trimmedFullName = fullName?.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        let trimmedUsername =
+        username.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        let trimmedFullName =
+        fullName?.trimmingCharacters(in: .whitespacesAndNewlines)
+
 
         guard !trimmedUsername.isEmpty else {
             errorMessage = "Choose a username before continuing."
             return
         }
 
+
         isLoading = true
         errorMessage = ""
 
+
         do {
+
             let newProfile = Profile(
                 id: userID,
                 username: trimmedUsername,
-                full_name: trimmedFullName?.isEmpty == true ? nil : trimmedFullName,
+                full_name: trimmedFullName?.isEmpty == true
+                    ? nil
+                    : trimmedFullName,
+                avatar_url: nil,
                 interests: []
             )
+
 
             try await client
                 .from("profiles")
                 .insert(newProfile)
                 .execute()
 
+
             profile = newProfile
             needsProfileSetup = false
+
+
         } catch {
+
             errorMessage = error.localizedDescription
             print("Profile creation failed:", error)
         }
+
 
         isLoading = false
     }
@@ -180,6 +292,7 @@ final class AuthManager: ObservableObject {
                     id: profile.id,
                     username: profile.username,
                     full_name: profile.full_name,
+                    avatar_url: profile.avatar_url,
                     interests: normalizedInterests
                 )
             } else {
@@ -195,27 +308,45 @@ final class AuthManager: ObservableObject {
         }
     }
 
+
+    // MARK: - Sign Out
+
     func signOut() async {
+
         do {
+
             try await client.auth.signOut()
             clearSession()
+
         } catch {
+
             errorMessage = error.localizedDescription
             print("Sign out failed:", error)
         }
     }
 
-    private func updateSession(userID: UUID, email: String?) {
+
+
+    // MARK: - Helpers
+
+    private func updateSession(
+        userID: UUID,
+        email: String?
+    ) {
+
         self.userID = userID
         self.userEmail = email
         isSignedIn = true
         errorMessage = ""
     }
 
+
     private func clearSession() {
+
         userID = nil
         userEmail = nil
         profile = nil
+        avatarImage = nil
         needsProfileSetup = false
         isSignedIn = false
     }
