@@ -286,7 +286,7 @@ struct ProfileView: View {
         guard let uid = authManager.userID else { return [] }
         return eventManager.events.filter { $0.created_by == uid }
     }
-    
+       
     var historyEvents: [DetailedEvent] {
         eventManager.events.filter { eventManager.joinedEventIDs.contains($0.id) }
     }
@@ -387,30 +387,7 @@ struct ProfileView: View {
                     selection: $selectedItem,
                     matching: .images
                 ) {
-                    if let avatarImage = authManager.avatarImage {
-                        Image(uiImage: avatarImage)
-                            .resizable()
-                            .scaledToFill()
-                            .frame(width: 90, height: 90)
-                            .clipShape(Circle())
-                            .overlay(
-                                Circle()
-                                    .stroke(btnPurple, lineWidth: 4)
-                            )
-                    } else {
-                        Image(systemName: "person.crop.circle.fill")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 90, height: 90)
-                            .foregroundColor(.white.opacity(0.9))
-                            .padding(4)
-                            .background(bgTeal)
-                            .clipShape(Circle())
-                            .overlay(
-                                Circle()
-                                    .stroke(btnPurple, lineWidth: 4)
-                            )
-                    }
+                    AvatarView(userID: authManager.userID)
                 }
                 .disabled(isUploadingAvatar)
 
@@ -496,6 +473,7 @@ struct ProfileView: View {
         }
     }
     
+
     private func loadAvatar(from item: PhotosPickerItem?) async {
         guard let item else { return }
 
@@ -516,8 +494,7 @@ struct ProfileView: View {
             }
 
             let path = "\(userID.uuidString)/avatar.jpg"
-            
-            
+
             try await SupabaseManager.shared.client.storage
                 .from("avatars")
                 .upload(
@@ -528,14 +505,15 @@ struct ProfileView: View {
                         upsert: true
                     )
                 )
-                
-            
+
             print("Uploading path:", path)
             print("User ID:", userID.uuidString)
 
             let url = try SupabaseManager.shared.client.storage
                 .from("avatars")
                 .getPublicURL(path: path)
+
+            SupabaseManager.shared.invalidateAvatarCache(for: url.absoluteString)   // <-- new
 
             try await SupabaseManager.shared.client
                 .from("profiles")
@@ -550,7 +528,7 @@ struct ProfileView: View {
             }
 
             print("✅ Avatar uploaded")
-            
+
             await authManager.refreshSession()
 
         } catch {
@@ -567,19 +545,24 @@ struct ProfileView: View {
             Text("Your Events")
                 .font(.system(size: 14, weight: .bold))
                 .foregroundColor(.black.opacity(0.6))
-            
+
             if myEvents.isEmpty {
                 Text("You haven't created any events yet.")
                     .font(.subheadline)
                     .foregroundColor(.white.opacity(0.8))
             } else {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 12) {
-                        ForEach(myEvents) { event in
-                            NavigationLink(destination: ExperienceDetailView(event: event, bgColor: bgTeal, nextColor: accentGreen)) {
-                                miniEventCard(for: event)
-                            }
+                FlowLayout(horizontalSpacing: 10, verticalSpacing: 10) {
+                    ForEach(myEvents) { event in
+                        NavigationLink {
+                            ExperienceDetailView(
+                                event: event,
+                                bgColor: bgTeal,
+                                nextColor: accentGreen
+                            )
+                        } label: {
+                            miniEventCard(for: event)
                         }
+                        .buttonStyle(.plain)
                     }
                 }
             }
@@ -591,25 +574,29 @@ struct ProfileView: View {
             Text("History")
                 .font(.system(size: 14, weight: .bold))
                 .foregroundColor(.black.opacity(0.6))
-            
+
             if historyEvents.isEmpty {
                 Text("You haven't joined any events yet.")
                     .font(.subheadline)
                     .foregroundColor(.white.opacity(0.8))
             } else {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 12) {
-                        ForEach(historyEvents) { event in
-                            NavigationLink(destination: ExperienceDetailView(event: event, bgColor: bgTeal, nextColor: accentGreen)) {
-                                miniEventCard(for: event)
-                            }
+                FlowLayout(horizontalSpacing: 10, verticalSpacing: 10) {
+                    ForEach(historyEvents) { event in
+                        NavigationLink {
+                            ExperienceDetailView(
+                                event: event,
+                                bgColor: bgTeal,
+                                nextColor: accentGreen
+                            )
+                        } label: {
+                            miniEventCard(for: event)
                         }
+                        .buttonStyle(.plain)
                     }
                 }
             }
         }
     }
-    
     private var signOutButton: some View {
         Button(action: {
             Task {
@@ -648,4 +635,11 @@ struct ProfileView: View {
         .background(Color.black.opacity(0.3))
         .clipShape(Capsule())
     }
+}
+
+
+#Preview {
+    ProfileView()
+        .environmentObject(EventManager())
+        .environmentObject(AuthManager())
 }

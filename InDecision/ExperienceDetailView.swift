@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct ExperienceDetailView: View {
+
     let event: DetailedEvent
     
     // Dependencies
@@ -162,9 +163,7 @@ struct ExperienceDetailView: View {
             
             // 2. The Profile Button
             NavigationLink(destination: ProfileDestinationView()) {
-                Image(systemName: "person.crop.circle.fill")
-                    .font(.system(size: 44))
-                    .foregroundColor(.white)
+                AvatarView(userID: authManager.userID)
             }
         }
         .padding(.top, 10)
@@ -266,26 +265,18 @@ struct ExperienceDetailView: View {
                             
                             Button(action: {
                                 selectedCardInfo = AttendeeCardInfo(
+                                    id: user.id,
                                     name: user.full_name ?? user.username,
                                     email: "No email provided",     // Placeholder
                                     hostedCount: isHost ? 5 : 1,   // Placeholder
-                                    interests: ["Music", "Coffee"],// Placeholder
+                                    interests: user.interests ?? [],
                                     isHost: isHost
                                 )
                             }) {
                                 VStack(spacing: 6) {
                                     ZStack(alignment: .bottomTrailing) {
                                         // The Gray Circle Placeholder
-                                        Image(systemName: "person.crop.circle.fill")
-                                            .resizable()
-                                            .frame(width: 54, height: 54)
-                                            .foregroundColor(.white.opacity(0.9))
-                                            .background(Circle().fill(Color.gray))
-                                            .clipShape(Circle())
-                                            // Purple border only for the host
-                                            .overlay(
-                                                Circle().stroke(isHost ? buttonPurple : Color.clear, lineWidth: isHost ? 3 : 0)
-                                            )
+                                        AvatarView(userID: user.id)
                                         
                                         // Verified Badge for Host
                                         if isHost {
@@ -360,7 +351,7 @@ struct ExperienceDetailView: View {
 // MARK: - Popup Card Data & View
 
 struct AttendeeCardInfo: Identifiable {
-    let id = UUID()
+    let id: UUID
     let name: String
     let email: String
     let hostedCount: Int
@@ -379,14 +370,7 @@ struct ProfileCardSheet: View {
         VStack(spacing: 20) {
             // Header Image
             ZStack(alignment: .bottomTrailing) {
-                Image(systemName: "person.crop.circle.fill")
-                    .resizable()
-                    .frame(width: 90, height: 90)
-                    .foregroundColor(.white.opacity(0.9))
-                    .padding(4)
-                    .background(bgTeal)
-                    .clipShape(Circle())
-                    .overlay(Circle().stroke(info.isHost ? btnPurple : Color.white.opacity(0.5), lineWidth: 4))
+                AvatarView(userID: info.id)
                 
                 if info.isHost {
                     Image(systemName: "checkmark.seal.fill")
@@ -441,15 +425,18 @@ struct ProfileCardSheet: View {
                     .font(.caption.bold())
                     .foregroundColor(.white.opacity(0.8))
                 
-                HStack {
-                    ForEach(info.interests, id: \.self) { interest in
-                        Text(interest)
-                            .font(.caption.bold())
-                            .foregroundColor(btnPurple)
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 8)
-                            .background(Color.white)
-                            .clipShape(Capsule())
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(info.interests, id: \.self) { interest in
+                            Text(interest)
+                                .font(.caption.bold())
+                                .foregroundColor(btnPurple)
+                                .fixedSize()
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 8)
+                                .background(Color.white)
+                                .clipShape(Capsule())
+                        }
                     }
                 }
             }

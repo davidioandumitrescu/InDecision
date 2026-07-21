@@ -334,9 +334,7 @@ struct ExperienceListView: View {
                             
                             // Profile Button
                             NavigationLink(destination: ProfileDestinationView()) {
-                                Image(systemName: "person.crop.circle.fill")
-                                    .font(.system(size: 44))
-                                    .foregroundColor(.white)
+                                AvatarView(userID: authManager.userID)
                             }
                         }
                         .padding(.horizontal)

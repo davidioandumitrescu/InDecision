@@ -37,14 +37,6 @@ final class AuthManager: ObservableObject {
         } catch {
             clearSession()
         }
-        Task {
-            do {
-                let buckets = try await SupabaseManager.shared.client.storage.listBuckets()
-                print("Buckets:", buckets.map { $0.name })
-            } catch {
-                print("List buckets failed:", error)
-            }
-        }
     }
 
     func handleOAuthCallback(url: URL) async {
@@ -74,12 +66,19 @@ final class AuthManager: ObservableObject {
         errorMessage = ""
 
         do {
-            try await client.auth.signInWithOAuth(
+            let session = try await client.auth.signInWithOAuth(
                 provider: .google,
                 redirectTo: URL(string: "indecision://login-callback")
             )
 
-            print("Google OAuth started")
+            updateSession(
+                userID: session.user.id,
+                email: session.user.email
+            )
+
+            await loadProfile()
+
+            print("Google OAuth complete:", session.user.id)
 
         } catch {
             errorMessage = error.localizedDescription
@@ -88,7 +87,6 @@ final class AuthManager: ObservableObject {
 
         isLoading = false
     }
-
 
     func signUp(email: String, password: String) async {
         isLoading = true
@@ -169,33 +167,8 @@ final class AuthManager: ObservableObject {
     // MARK: - Avatar Loading
 
     func loadAvatar(from urlString: String) async {
-        guard let url = URL(string: urlString) else {
-            avatarImage = nil
-            return
-        }
-
         isLoadingAvatar = true
-
-        do {
-            var request = URLRequest(url: url)
-            request.cachePolicy = .reloadIgnoringLocalAndRemoteCacheData
-
-            let (data, response) = try await URLSession.shared.data(for: request)
-
-            if let http = response as? HTTPURLResponse, !(200...299).contains(http.statusCode) {
-                print("❌ Avatar fetch HTTP \(http.statusCode):", String(data: data, encoding: .utf8) ?? "")
-                avatarImage = nil
-            } else if let image = UIImage(data: data) {
-                avatarImage = image
-            } else {
-                print("❌ Avatar data wasn't a decodable image (\(data.count) bytes)")
-                avatarImage = nil
-            }
-        } catch {
-            avatarImage = nil
-            print("Avatar loading failed:", error)
-        }
-
+        avatarImage = await SupabaseManager.shared.loadAvatarImage(from: urlString)
         isLoadingAvatar = false
     }
 

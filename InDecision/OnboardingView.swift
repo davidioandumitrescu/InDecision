@@ -48,11 +48,8 @@ struct OnboardingView: View {
                     // MARK: - HEADER
                     HStack {
                         HStack(spacing: 8) {
-                            Image(systemName: "person.3.fill")
-                                .font(.title2)
-                            Text("Bloop")
-                                .font(.title2)
-                                .bold()
+                            Image("BloopLogo-Sml")
+                        
                         }
                         .foregroundColor(.white)
                         
