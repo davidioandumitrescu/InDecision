@@ -178,24 +178,17 @@ private struct InterestEditorView: View {
             Form {
                 Section {
                     ForEach(draftInterests.indices, id: \.self) { index in
-                        HStack {
-                            TextField(
-                                "Interest",
-                                text: Binding(
-                                    get: { draftInterests[index] },
-                                    set: { draftInterests[index] = $0 }
-                                )
+                        TextField(
+                            "Interest",
+                            text: Binding(
+                                get: { draftInterests[index] },
+                                set: { draftInterests[index] = $0 }
                             )
-                            .textInputAutocapitalization(.words)
-
-                            Button(role: .destructive) {
-                                draftInterests.remove(at: index)
-                            } label: {
-                                Image(systemName: "trash")
-                            }
-                            .buttonStyle(.borderless)
-                            .accessibilityLabel("Delete interest")
-                        }
+                        )
+                        .textInputAutocapitalization(.words)
+                    }
+                    .onDelete { offsets in
+                        draftInterests.remove(atOffsets: offsets)
                     }
 
                     Button {
@@ -304,6 +297,90 @@ struct ProfileSetupView: View {
 }
 
 // MARK: - NEW PROFILE VIEW
+
+private struct FlowLayout: Layout {
+    let horizontalSpacing: CGFloat
+    let verticalSpacing: CGFloat
+
+    func sizeThatFits(
+        proposal: ProposedViewSize,
+        subviews: Subviews,
+        cache: inout ()
+    ) -> CGSize {
+        let rows = makeRows(maxWidth: proposal.width ?? .infinity, subviews: subviews)
+        let contentWidth = rows.map(\.width).max() ?? 0
+        let contentHeight = rows.reduce(0) { $0 + $1.height }
+            + verticalSpacing * CGFloat(max(rows.count - 1, 0))
+
+        return CGSize(
+            width: proposal.width ?? contentWidth,
+            height: contentHeight
+        )
+    }
+
+    func placeSubviews(
+        in bounds: CGRect,
+        proposal: ProposedViewSize,
+        subviews: Subviews,
+        cache: inout ()
+    ) {
+        let rows = makeRows(maxWidth: bounds.width, subviews: subviews)
+        var y = bounds.minY
+
+        for row in rows {
+            var x = bounds.minX
+
+            for item in row.items {
+                item.subview.place(
+                    at: CGPoint(x: x, y: y + (row.height - item.size.height) / 2),
+                    anchor: .topLeading,
+                    proposal: ProposedViewSize(item.size)
+                )
+                x += item.size.width + horizontalSpacing
+            }
+
+            y += row.height + verticalSpacing
+        }
+    }
+
+    private func makeRows(maxWidth: CGFloat, subviews: Subviews) -> [Row] {
+        var rows: [Row] = []
+        var currentRow = Row()
+
+        for subview in subviews {
+            let size = subview.sizeThatFits(.unspecified)
+            let requiredWidth = currentRow.items.isEmpty
+                ? size.width
+                : currentRow.width + horizontalSpacing + size.width
+
+            if !currentRow.items.isEmpty, requiredWidth > maxWidth {
+                rows.append(currentRow)
+                currentRow = Row()
+            }
+
+            currentRow.items.append(Item(subview: subview, size: size))
+            currentRow.width += (currentRow.items.count == 1 ? 0 : horizontalSpacing) + size.width
+            currentRow.height = max(currentRow.height, size.height)
+        }
+
+        if !currentRow.items.isEmpty {
+            rows.append(currentRow)
+        }
+
+        return rows
+    }
+
+    private struct Item {
+        let subview: LayoutSubview
+        let size: CGSize
+    }
+
+    private struct Row {
+        var items: [Item] = []
+        var width: CGFloat = 0
+        var height: CGFloat = 0
+    }
+}
 
 struct ProfileView: View {
     @EnvironmentObject var authManager: AuthManager
@@ -471,7 +548,7 @@ struct ProfileView: View {
                 .font(.system(size: 14, weight: .bold))
                 .foregroundColor(.black.opacity(0.6))
             
-            HStack(spacing: 10) {
+            FlowLayout(horizontalSpacing: 10, verticalSpacing: 10) {
                 ForEach(Array(interests.enumerated()), id: \.offset) { _, interest in
                     Button {
                         shouldAddInterest = false
@@ -480,6 +557,8 @@ struct ProfileView: View {
                         Text(interest)
                             .font(.system(size: 14, weight: .semibold))
                             .foregroundColor(.white)
+                            .lineLimit(1)
+                            .fixedSize(horizontal: true, vertical: false)
                             .padding(.horizontal, 16)
                             .padding(.vertical, 8)
                             .background(Color.black.opacity(0.3))
