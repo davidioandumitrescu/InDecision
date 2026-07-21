@@ -34,7 +34,8 @@ class EventManager: ObservableObject {
                 .value
 
             for index in fetchedEvents.indices {
-                let count: Int = try await SupabaseManager.shared.client
+                // Get save count
+                let saveCount: Int = try await SupabaseManager.shared.client
                     .rpc(
                         "get_event_save_count",
                         params: [
@@ -44,7 +45,20 @@ class EventManager: ObservableObject {
                     .execute()
                     .value
 
-                fetchedEvents[index].likeCount = count
+                fetchedEvents[index].likeCount = saveCount
+
+                // Get joined event count
+                let joinCount: Int = try await SupabaseManager.shared.client
+                    .rpc(
+                        "get_joined_event_count",
+                        params: [
+                            "event_uuid": fetchedEvents[index].id.uuidString
+                        ]
+                    )
+                    .execute()
+                    .value
+
+                fetchedEvents[index].joinedCount = joinCount
             }
 
             self.events = fetchedEvents
@@ -77,7 +91,7 @@ class EventManager: ObservableObject {
 //                .execute()
             
             // Add it to our local Set so the button instantly says "You are going"
-            joinedEventIDs.insert(event.id)
+            //joinedEventIDs.insert(event.id)
             
             errorMessage = ""
             print("✅ Event created")
