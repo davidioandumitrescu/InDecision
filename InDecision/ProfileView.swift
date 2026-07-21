@@ -387,30 +387,7 @@ struct ProfileView: View {
                     selection: $selectedItem,
                     matching: .images
                 ) {
-                    if let avatarImage = authManager.avatarImage {
-                        Image(uiImage: avatarImage)
-                            .resizable()
-                            .scaledToFill()
-                            .frame(width: 90, height: 90)
-                            .clipShape(Circle())
-                            .overlay(
-                                Circle()
-                                    .stroke(btnPurple, lineWidth: 4)
-                            )
-                    } else {
-                        Image(systemName: "person.crop.circle.fill")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 90, height: 90)
-                            .foregroundColor(.white.opacity(0.9))
-                            .padding(4)
-                            .background(bgTeal)
-                            .clipShape(Circle())
-                            .overlay(
-                                Circle()
-                                    .stroke(btnPurple, lineWidth: 4)
-                            )
-                    }
+                    AvatarView(userID: authManager.userID)
                 }
                 .disabled(isUploadingAvatar)
 
