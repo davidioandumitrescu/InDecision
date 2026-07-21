@@ -15,6 +15,9 @@ struct ExperienceDetailView: View {
     @EnvironmentObject var authManager: AuthManager
     @Environment(\.dismiss) var dismiss
     
+    @State private var showDeleteAlert = false
+    @State private var showEditSheet = false
+    
     // UI State
     @State private var attendees: [Profile] = []
     @State private var isLoadingAttendees: Bool = true
