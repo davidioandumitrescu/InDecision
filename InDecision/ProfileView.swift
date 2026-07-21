@@ -6,9 +6,12 @@
 //
 
 import SwiftUI
+import PhotosUI
+import Supabase
 
 struct ProfileDestinationView: View {
     @EnvironmentObject var authManager: AuthManager
+    
 
     var body: some View {
         Group {
@@ -261,6 +264,9 @@ struct ProfileView: View {
     @EnvironmentObject var authManager: AuthManager
     @EnvironmentObject var eventManager: EventManager
     @Environment(\.dismiss) var dismiss
+    
+    
+    
 
     // Theme Colors matching the mockup
     private let bgTeal = Color.teal
@@ -271,6 +277,9 @@ struct ProfileView: View {
     @State private var interests: [String] = []
     @State private var isEditingInterests = false
     @State private var shouldAddInterest = false
+    @State private var selectedItem: PhotosPickerItem?
+    @State private var avatarImage: UIImage?
+    @State private var isUploadingAvatar = false
     
     // Computed Data
     var myEvents: [DetailedEvent] {
@@ -283,6 +292,7 @@ struct ProfileView: View {
     }
 
     var body: some View {
+        
         ZStack {
             // 1. Background Layers
             bgTeal.ignoresSafeArea()
@@ -370,21 +380,40 @@ struct ProfileView: View {
     
     private var profileHeader: some View {
         VStack(alignment: .leading, spacing: 16) {
-            // Profile Picture with purple border and verified badge
+            
             ZStack(alignment: .bottomTrailing) {
-                Image(systemName: "person.crop.circle.fill")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 90, height: 90)
-                    .foregroundColor(.white.opacity(0.9))
-                    .padding(4)
-                    .background(bgTeal)
-                    .clipShape(Circle())
-                    .overlay(
-                        Circle().stroke(btnPurple, lineWidth: 4)
-                    )
-                
-                // Verified Badge
+
+                PhotosPicker(
+                    selection: $selectedItem,
+                    matching: .images
+                ) {
+                    if let avatarImage = authManager.avatarImage {
+                        Image(uiImage: avatarImage)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: 90, height: 90)
+                            .clipShape(Circle())
+                            .overlay(
+                                Circle()
+                                    .stroke(btnPurple, lineWidth: 4)
+                            )
+                    } else {
+                        Image(systemName: "person.crop.circle.fill")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 90, height: 90)
+                            .foregroundColor(.white.opacity(0.9))
+                            .padding(4)
+                            .background(bgTeal)
+                            .clipShape(Circle())
+                            .overlay(
+                                Circle()
+                                    .stroke(btnPurple, lineWidth: 4)
+                            )
+                    }
+                }
+                .disabled(isUploadingAvatar)
+
                 Image(systemName: "checkmark.seal.fill")
                     .font(.system(size: 24))
                     .foregroundColor(.white)
@@ -392,7 +421,13 @@ struct ProfileView: View {
                     .clipShape(Circle())
                     .offset(x: 5, y: 5)
             }
-            
+            .onChange(of: selectedItem) { _, newItem in
+                Task {
+                    await loadAvatar(from: newItem)
+                }
+            }
+
+
             VStack(alignment: .leading, spacing: 4) {
                 if let profile = authManager.profile {
                     Text(profile.full_name ?? profile.username)
@@ -403,7 +438,7 @@ struct ProfileView: View {
                         .font(.system(size: 28, weight: .bold))
                         .foregroundColor(.white)
                 }
-                
+
                 if let email = authManager.userEmail {
                     Text(email)
                         .font(.subheadline)
@@ -461,6 +496,71 @@ struct ProfileView: View {
         }
     }
     
+    private func loadAvatar(from item: PhotosPickerItem?) async {
+        guard let item else { return }
+
+        do {
+            guard let data = try await item.loadTransferable(type: Data.self),
+                  let image = UIImage(data: data)
+            else {
+                return
+            }
+
+            await MainActor.run {
+                avatarImage = image
+                isUploadingAvatar = true
+            }
+
+            guard let userID = authManager.userID else {
+                return
+            }
+
+            let path = "\(userID.uuidString)/avatar.jpg"
+            
+            
+            try await SupabaseManager.shared.client.storage
+                .from("avatars")
+                .upload(
+                    path,
+                    data: data,
+                    options: FileOptions(
+                        contentType: "image/jpeg",
+                        upsert: true
+                    )
+                )
+                
+            
+            print("Uploading path:", path)
+            print("User ID:", userID.uuidString)
+
+            let url = try SupabaseManager.shared.client.storage
+                .from("avatars")
+                .getPublicURL(path: path)
+
+            try await SupabaseManager.shared.client
+                .from("profiles")
+                .update([
+                    "avatar_url": url.absoluteString
+                ])
+                .eq("id", value: userID)
+                .execute()
+
+            await MainActor.run {
+                isUploadingAvatar = false
+            }
+
+            print("✅ Avatar uploaded")
+            
+            await authManager.refreshSession()
+
+        } catch {
+            await MainActor.run {
+                isUploadingAvatar = false
+            }
+
+            print("❌ Avatar upload failed:", error)
+        }
+    }
     
     private var createdEventsSection: some View {
         VStack(alignment: .leading, spacing: 12) {
