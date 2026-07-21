@@ -116,6 +116,87 @@ struct StaggeredEventCard: View {
     }
 }
 
+private struct FilterBubbleLayout: Layout {
+    let horizontalSpacing: CGFloat
+    let verticalSpacing: CGFloat
+
+    func sizeThatFits(
+        proposal: ProposedViewSize,
+        subviews: Subviews,
+        cache: inout ()
+    ) -> CGSize {
+        let rows = makeRows(maxWidth: proposal.width ?? .infinity, subviews: subviews)
+        let contentWidth = rows.map(\.width).max() ?? 0
+        let contentHeight = rows.reduce(0) { $0 + $1.height }
+            + verticalSpacing * CGFloat(max(rows.count - 1, 0))
+
+        return CGSize(width: proposal.width ?? contentWidth, height: contentHeight)
+    }
+
+    func placeSubviews(
+        in bounds: CGRect,
+        proposal: ProposedViewSize,
+        subviews: Subviews,
+        cache: inout ()
+    ) {
+        let rows = makeRows(maxWidth: bounds.width, subviews: subviews)
+        var y = bounds.minY
+
+        for row in rows {
+            var x = bounds.minX
+
+            for item in row.items {
+                item.subview.place(
+                    at: CGPoint(x: x, y: y + (row.height - item.size.height) / 2),
+                    anchor: .topLeading,
+                    proposal: ProposedViewSize(item.size)
+                )
+                x += item.size.width + horizontalSpacing
+            }
+
+            y += row.height + verticalSpacing
+        }
+    }
+
+    private func makeRows(maxWidth: CGFloat, subviews: Subviews) -> [Row] {
+        var rows: [Row] = []
+        var currentRow = Row()
+
+        for subview in subviews {
+            let size = subview.sizeThatFits(.unspecified)
+            let requiredWidth = currentRow.items.isEmpty
+                ? size.width
+                : currentRow.width + horizontalSpacing + size.width
+
+            if !currentRow.items.isEmpty, requiredWidth > maxWidth {
+                rows.append(currentRow)
+                currentRow = Row()
+            }
+
+            currentRow.items.append(Item(subview: subview, size: size))
+            currentRow.width += (currentRow.items.count == 1 ? 0 : horizontalSpacing) + size.width
+            currentRow.height = max(currentRow.height, size.height)
+        }
+
+        if !currentRow.items.isEmpty {
+            rows.append(currentRow)
+        }
+
+        return rows
+    }
+
+    private struct Item {
+        let subview: LayoutSubview
+        let size: CGSize
+    }
+
+    private struct Row {
+        var items: [Item] = []
+        var width: CGFloat = 0
+        var height: CGFloat = 0
+    }
+}
+
 // MARK: - 3. THE MAIN LIST
 struct ExperienceListView: View {
     @EnvironmentObject var eventManager: EventManager
@@ -124,14 +205,14 @@ struct ExperienceListView: View {
     // MARK: - Filter States
     @State private var searchText = ""
     @State private var selectedFilter = 0
-    @State private var typeFilter: String = "All"
+    @State private var selectedTypes: Set<String> = []
     
     let experienceTypes = ["All", "Teach", "Demonstrate", "StoryTell", "Build", "Mentor", "Explore", "Discuss", "Practice"]
     
     let palette: [Color] = [.teal, .green, .yellow, .orange]
     let stepCount = 3
     let stepHeight: CGFloat = 30
-    
+
     // MARK: - Filter Logic (Now uses eventManager.events!)
     var filterEvents: [DetailedEvent] {
         eventManager.events.filter { event in
@@ -142,7 +223,7 @@ struct ExperienceListView: View {
             else if selectedFilter == 2 { matchesSegment = event.isSolid }
             else { matchesSegment = true }
             
-            let matchesType = (typeFilter == "All") || (event.experienceType == typeFilter)
+            let matchesType = selectedTypes.isEmpty || selectedTypes.contains(event.experienceType)
             
             return matchesSearch && matchesSegment && matchesType
         }
@@ -219,13 +300,27 @@ struct ExperienceListView: View {
                             // Filter Dropdown Button
                             Menu {
                                 ForEach(experienceTypes, id: \.self) { type in
-                                    Button(action: { typeFilter = type }) {
-                                        if typeFilter == type {
-                                            Label(type, systemImage: "checkmark")
-                                        } else {
-                                            Text(type)
-                                        }
-                                    }
+                                    Toggle(
+                                        type,
+                                        isOn: Binding(
+                                            get: {
+                                                type == "All"
+                                                    ? selectedTypes.isEmpty
+                                                    : selectedTypes.contains(type)
+                                            },
+                                            set: { isSelected in
+                                                if type == "All" {
+                                                    if isSelected {
+                                                        selectedTypes.removeAll()
+                                                    }
+                                                } else if isSelected {
+                                                    selectedTypes.insert(type)
+                                                } else {
+                                                    selectedTypes.remove(type)
+                                                }
+                                            }
+                                        )
+                                    )
                                 }
                             } label: {
                                 Image(systemName: "line.3.horizontal.decrease")
@@ -256,15 +351,25 @@ struct ExperienceListView: View {
                         .padding(.horizontal)
                         
                         // 3. Active Filter Indicator
-                        if typeFilter != "All" {
-                            HStack {
-                                Text("Filtered by: **\(typeFilter)**")
-                                    .font(.caption)
-                                    .foregroundColor(.black)
-                                Spacer()
-                                Button(action: { typeFilter = "All" }) {
-                                    Image(systemName: "xmark.circle.fill")
-                                        .foregroundColor(.black.opacity(0.6))
+                        if !selectedTypes.isEmpty {
+                            FilterBubbleLayout(horizontalSpacing: 8, verticalSpacing: 8) {
+                                ForEach(experienceTypes.filter { selectedTypes.contains($0) }, id: \.self) { type in
+                                    Button {
+                                        selectedTypes.remove(type)
+                                    } label: {
+                                        HStack(spacing: 6) {
+                                            Text(type)
+                                            Image(systemName: "xmark")
+                                        }
+                                        .font(.caption.weight(.semibold))
+                                        .foregroundColor(.black.opacity(0.7))
+                                        .padding(.horizontal, 12)
+                                        .padding(.vertical, 7)
+                                        .background(Color.white.opacity(0.85))
+                                        .clipShape(Capsule())
+                                    }
+                                    .buttonStyle(.plain)
+                                    .accessibilityLabel("Remove \(type) filter")
                                 }
                             }
                             .padding(.horizontal)
@@ -290,4 +395,10 @@ struct ExperienceListView: View {
             //}
         }
     }
+}
+
+#Preview {
+    ExperienceListView()
+        .environmentObject(EventManager())
+        .environmentObject(AuthManager())
 }
