@@ -28,15 +28,16 @@ struct DetailedEvent: Identifiable, Codable {
     var description: String
     
     // MARK: - Status
-    /// false = Proposed (0 in DB), true = Solid (1 in DB)
     var isSolid: Bool = false
     
     // MARK: - Counters
-    var likeCount: Int
-    var joinedCount: Int
+    var likeCount: Int = 0
+    var joinedCount: Int = 0
+    
+    // MARK: - Supabase Relationship
+    var saved_events: [SavedEventReference]? = nil
     
     // MARK: - Computed Logic
-    
     var generatedTitle: String {
         "\(hostName) wants \(Int(minPeople))-\(Int(maxPeople)) \(connectionTarget) to go \(activity) with \(formattedDaysString)"
     }
@@ -51,42 +52,9 @@ struct DetailedEvent: Identifiable, Codable {
     }
     
     var stylizedPreview: Text {
-//            Text("""
-//            \(Text("\(hostName) ").foregroundColor(.blue))\
-//            \(Text("wants ").foregroundColor(.black))\
-//            \(Text("\(minPeople)-\(maxPeople) ").foregroundColor(.orange))\
-//            \(Text("\(connectionTarget) ").foregroundColor(.blue))\
-//            \(Text("to \ngo ").foregroundColor(.black))\
-//            \(Text("\(activity) ").foregroundColor(.green))\
-//            \(Text("with ").foregroundColor(.black))\
-//            \(styledDaysText)
-//            """)
         Text("\(hostName) wants \(Int(minPeople))-\(Int(maxPeople)) \(connectionTarget) to \ngo \(activity) with \(formattedDaysString)")
-        }
-    
-    private var styledDaysText: Text {
-        if selectedDays.isEmpty {
-            return Text("anytime").foregroundColor(.blue)
-        }
-        if selectedDays.count == 1 {
-            return Text(selectedDays[0]).foregroundColor(.blue)
-        }
-        if selectedDays.count == 2 {
-            return Text(selectedDays[0]).foregroundColor(.blue)
-                + Text(" or ").foregroundColor(.black)
-                + Text(selectedDays[1]).foregroundColor(.blue)
-        }
-        
-        var multiDayText = Text("")
-        for (index, day) in selectedDays.enumerated() {
-            if index == selectedDays.count - 1 {
-                multiDayText = multiDayText + Text("or ").foregroundColor(.black) + Text(day).foregroundColor(.blue)
-            } else {
-                multiDayText = multiDayText + Text("\(day), ").foregroundColor(.blue)
-            }
-        }
-        return multiDayText
     }
+    
     enum CodingKeys: String, CodingKey {
         case id
         case hostName = "host_name"
@@ -104,9 +72,13 @@ struct DetailedEvent: Identifiable, Codable {
         case isSolid = "is_solid"
         case likeCount = "like_count"
         case joinedCount = "joined_count"
+        case saved_events
     }
 }
 
+struct SavedEventReference: Codable {
+    let id: UUID?
+}
 
 struct Profile: Identifiable, Codable {
     let id: UUID

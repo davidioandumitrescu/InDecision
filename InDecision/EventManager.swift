@@ -26,18 +26,29 @@ class EventManager: ObservableObject {
     
     func loadEvents() async {
         do {
-            let fetchedEvents: [DetailedEvent] = try await SupabaseManager.shared.client
+            var fetchedEvents: [DetailedEvent] = try await SupabaseManager.shared.client
                 .from("events")
                 .select()
                 .order("created_at", ascending: false)
                 .execute()
                 .value
-            
+
+            for index in fetchedEvents.indices {
+                let count = try await SupabaseManager.shared.client
+                    .from("saved_events")
+                    .select("*", head: true, count: .exact)
+                    .eq("event_id", value: fetchedEvents[index].id.uuidString)
+                    .execute()
+                    .count ?? 0
+                
+                fetchedEvents[index].likeCount = count
+            }
+
             self.events = fetchedEvents
             errorMessage = ""
-            
+
             print("✅ Loaded \(fetchedEvents.count) events")
-            
+
         } catch {
             errorMessage = error.localizedDescription
             print("❌ Failed to load events:", error)
@@ -132,17 +143,7 @@ class EventManager: ObservableObject {
                 .from("saved_events")
                 .insert(savedEvent)
                 .execute()
-            
-            if let index = events.firstIndex(where: { $0.id == eventId }) {
-                events[index].likeCount += 1
-                try await SupabaseManager.shared.client
-                    .from("events")
-                    .update(["like_count": events[index].likeCount])
-                    .eq("id", value: eventId.uuidString)
-                    .execute()
-            }
 
-            savedEventIDs.insert(eventId)
             errorMessage = ""
         } catch {
             errorMessage = error.localizedDescription
@@ -158,15 +159,6 @@ class EventManager: ObservableObject {
                 .eq("user_id", value: userID.uuidString)
                 .eq("event_id", value: eventId.uuidString)
                 .execute()
-            
-            if let index = events.firstIndex(where: { $0.id == eventId }) {
-                events[index].likeCount = max(0, events[index].likeCount - 1)
-                try await SupabaseManager.shared.client
-                    .from("events")
-                    .update(["like_count": events[index].likeCount])
-                    .eq("id", value: eventId.uuidString)
-                    .execute()
-            }
 
             savedEventIDs.remove(eventId)
             errorMessage = ""
