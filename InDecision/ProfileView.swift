@@ -387,7 +387,7 @@ struct ProfileView: View {
                     selection: $selectedItem,
                     matching: .images
                 ) {
-                    AvatarView(userID: authManager.userID)
+                    AvatarView(userID: authManager.userID, size: 100)
                 }
                 .disabled(isUploadingAvatar)
 
