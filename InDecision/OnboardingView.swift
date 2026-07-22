@@ -18,16 +18,11 @@ struct OnboardingView: View {
     let timer = Timer.publish(every: 4, on: .main, in: .common).autoconnect()
     
     // MARK: - Theme Colors
-// <<<<<<< itroy
-//     private let bgTeal = Color("AppSurface")
-//     // private let bgTeal = Color("red: 0.05, green: 0.78, blue: 0.67")
-//     private let accentGreen = Color("ColorGreen")
-//     private let btnPurple = Color("AppPrimary")
-// =======
-    private let bgTeal = Color.mint
-    private let accentGreen = Color(red: 0.20, green: 0.80, blue: 0.35)
-    private let btnPurple = Color(red: 0.50, green: 0.35, blue: 0.96)
-// >>>>>>> dev
+
+    private let bgTeal = Color("AppSurface")
+    private let accentGreen = Color("ColorGreen")
+    private let accent = Color("AccentColor")
+    private let btnPurple = Color("AppPrimary")
     private let darkCyan = Color(red: 0.0, green: 0.5, blue: 0.5)
     
     var body: some View {
@@ -42,8 +37,8 @@ struct OnboardingView: View {
                     HStack {
                         Spacer()
                         VStack(alignment: .trailing, spacing: 0) {
-                            accentGreen.frame(width: 130, height: 70)
-                            accentGreen.frame(width: 250, height: 70)
+                            accent.frame(width: 130, height: 70)
+                            accent.frame(width: 250, height: 70)
                         }
                     }
                 }
