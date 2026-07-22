@@ -128,7 +128,7 @@ struct ExperienceListView: View {
     
     let experienceTypes = ["All", "Teach", "Demonstrate", "StoryTell", "Build", "Mentor", "Explore", "Discuss", "Practice"]
     
-    let palette: [Color] = [.teal, .green, .yellow, .orange]
+    let palette: [Color] = [.mint, .green, .yellow, .orange]
     let stepCount = 3
     let stepHeight: CGFloat = 30
     
