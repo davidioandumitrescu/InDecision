@@ -275,6 +275,7 @@ class EventManager: ObservableObject {
                 
                 
                 
+                
                 // Bump the joined counter up
                 if let index = events.firstIndex(where: { $0.id == eventId }) {
                     events[index].joinedCount += 1
