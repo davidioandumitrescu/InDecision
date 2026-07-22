@@ -39,7 +39,7 @@ struct DetailedEvent: Identifiable, Codable {
     
     // MARK: - Computed Logic
     var generatedTitle: String {
-        "\(hostName) wants \(Int(minPeople))-\(Int(maxPeople)) \(connectionTarget) to go \(activity) with \(formattedDaysString)"
+        "\(hostName) wants \(Int(minPeople))-\(Int(maxPeople)) \(connectionTarget) to go \(activity) on \(formattedDaysString)"
     }
     
     private var formattedDaysString: String {
@@ -52,7 +52,7 @@ struct DetailedEvent: Identifiable, Codable {
     }
     
     var stylizedPreview: Text {
-        Text("\(hostName) wants \(Int(minPeople))-\(Int(maxPeople)) \(connectionTarget) to \ngo \(activity) with \(formattedDaysString)")
+        Text("\(hostName) wants \(Int(minPeople))-\(Int(maxPeople)) \(connectionTarget) to \ngo \(activity) on \(formattedDaysString)")
     }
     
     enum CodingKeys: String, CodingKey {
