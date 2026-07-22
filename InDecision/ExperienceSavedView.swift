@@ -12,7 +12,7 @@ struct ExperienceSavedView: View {
     @EnvironmentObject var authManager: AuthManager
     
     // Theme Colors matching the rest of the app
-    private let bgTeal = Color.teal
+    private let bgTeal = Color.mint
     private let accentGreen = Color.green
     
     // Computed Data

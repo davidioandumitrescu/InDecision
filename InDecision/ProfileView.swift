@@ -263,13 +263,14 @@ private struct FlowLayout: Layout {
 struct ProfileView: View {
     @EnvironmentObject var authManager: AuthManager
     @EnvironmentObject var eventManager: EventManager
+    @EnvironmentObject var voiceManager: VoiceManager
     @Environment(\.dismiss) var dismiss
     
     
     
 
     // Theme Colors matching the mockup
-    private let bgTeal = Color.teal
+    private let bgTeal = Color.mint
     private let accentGreen = Color.green
     private let btnPurple = Color(red: 0.45, green: 0.35, blue: 0.95)
     
@@ -322,6 +323,10 @@ struct ProfileView: View {
                         profileHeader
                         
                         interestsSection
+                        
+                        Divider().background(Color.white.opacity(0.3))
+                        
+                        communitySoundSection
                         
                         Divider().background(Color.white.opacity(0.3))
                         
@@ -387,7 +392,7 @@ struct ProfileView: View {
                     selection: $selectedItem,
                     matching: .images
                 ) {
-                    AvatarView(userID: authManager.userID)
+                    AvatarView(userID: authManager.userID, size: 100)
                 }
                 .disabled(isUploadingAvatar)
 
@@ -473,7 +478,6 @@ struct ProfileView: View {
         }
     }
     
-
     private func loadAvatar(from item: PhotosPickerItem?) async {
         guard let item else { return }
 
@@ -655,6 +659,42 @@ struct ProfileView: View {
         }
     }
     
+
+    // Reusable view for the mini event pills in the horizontal scroll views
+    private func miniEventCard(for event: DetailedEvent) -> some View {
+        HStack(spacing: 8) {
+            Text(event.activity.isEmpty ? "Something fun" : event.activity)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(.white)
+            
+            Image(systemName: "chevron.right")
+                .font(.system(size: 12, weight: .bold))
+                .foregroundColor(.white.opacity(0.7))
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+        .background(Color.black.opacity(0.3))
+        .clipShape(Capsule())
+    }
+    
+    private var communitySoundSection: some View {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Community Join Sound")
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundColor(.black.opacity(0.6))
+                
+                Text("Record a fun noise or catchphrase. It might play when someone joins an event!")
+                    .font(.subheadline)
+                    .foregroundColor(.white.opacity(0.8))
+                
+                HStack {
+                    Spacer()
+                    RecordButtonView(btnPurple: btnPurple) // Pass your custom purple to match theme
+                    Spacer()
+                }
+                .padding(.top, 8)
+            }
+        }
 }
 
 
@@ -662,4 +702,5 @@ struct ProfileView: View {
     ProfileView()
         .environmentObject(EventManager())
         .environmentObject(AuthManager())
+        .environmentObject(VoiceManager())
 }

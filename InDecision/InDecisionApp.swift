@@ -11,6 +11,7 @@ import SwiftUI
 struct InDecisionApp: App {
     @StateObject private var eventManager = EventManager()
     @StateObject private var authManager = AuthManager()
+    @StateObject var voiceManager = VoiceManager()
     
     @State private var showDiscardAlert = false
     @State private var pendingTab = 0
@@ -50,7 +51,11 @@ struct InDecisionApp: App {
                             .tag(0)
                         
                         NavigationStack{
-                            ExperienceCreateView()
+                            if (authManager.isSignedIn){
+                                ExperienceCreateView()
+                            } else {
+                                ProfileDestinationView()
+                            }
                         }
                         .tabItem {
                             Label("Create", systemImage: "plus")
@@ -82,8 +87,10 @@ struct InDecisionApp: App {
             // 2. Attach modifiers ONCE to the Group
             .environmentObject(eventManager)
             .environmentObject(authManager)
+            .environmentObject(voiceManager)
             .task {
                 await authManager.refreshSession()
+                await voiceManager.fetchRandomSoundForSession()
             }
             .onOpenURL { url in
                 Task {

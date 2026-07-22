@@ -9,6 +9,8 @@ import Combine
 import Foundation
 import Supabase
 import SwiftUI
+import UIKit
+
 
 @MainActor
 class EventManager: ObservableObject {
@@ -82,13 +84,20 @@ class EventManager: ObservableObject {
                 .from("events")
                 .insert(event)
                 .execute()
-            //automatically save and join the event you created
-            let joinEvent = JoinedEvent(userID: event.created_by, eventID: event.id)
-            
-            try await SupabaseManager.shared.client
-                .from("joined_events")
-                .insert(joinEvent)
-                .execute()
+            // Automatically join only when the event has a creator
+            if let creatorID = event.created_by {
+                let joinEvent = JoinedEvent(
+                    userID: creatorID,
+                    eventID: event.id
+                )
+
+                try await SupabaseManager.shared.client
+                    .from("joined_events")
+                    .insert(joinEvent)
+                    .execute()
+
+                joinedEventIDs.insert(event.id)
+            }
             
             // Add it to our local Set so the button instantly says "You are going"
             //joinedEventIDs.insert(event.id)
@@ -134,6 +143,11 @@ class EventManager: ObservableObject {
     func toggleSave(for eventId: UUID, userID: UUID?) async {
         guard let userID else {
             errorMessage = "You need to sign in before saving events."
+
+            await MainActor.run {
+                UINotificationFeedbackGenerator().notificationOccurred(.error)
+            }
+
             return
         }
 
@@ -142,8 +156,11 @@ class EventManager: ObservableObject {
         } else {
             await saveEvent(eventId, userID: userID)
         }
-    }
 
+        await MainActor.run {
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        }
+    }
     func clearSavedEvents() {
         savedEventIDs = []
     }
@@ -161,8 +178,10 @@ class EventManager: ObservableObject {
                 .insert(savedEvent)
                 .execute()
 
-            errorMessage = ""
-            
+            // ✅ Insert the ID into the local set so the UI refreshes
+            savedEventIDs.insert(eventId)
+
+            // Update local event's likeCount
             if let index = events.firstIndex(where: { $0.id == eventId }) {
                 events[index].likeCount += 1
                 try await SupabaseManager.shared.client
@@ -171,6 +190,8 @@ class EventManager: ObservableObject {
                     .eq("id", value: eventId.uuidString)
                     .execute()
             }
+
+            errorMessage = ""
         } catch {
             errorMessage = error.localizedDescription
             print("❌ Failed to save event:", error)
@@ -227,9 +248,13 @@ class EventManager: ObservableObject {
             }
         }
 
+
         func toggleJoin(for eventId: UUID, userID: UUID?) async {
             guard let userID else {
                 errorMessage = "You need to sign in before joining events."
+                await MainActor.run {
+                    UINotificationFeedbackGenerator().notificationOccurred(.error)
+                }
                 return
             }
 
@@ -237,6 +262,10 @@ class EventManager: ObservableObject {
                 await leaveEvent(eventId, userID: userID)
             } else {
                 await joinEvent(eventId, userID: userID)
+            }
+
+            await MainActor.run {
+                UINotificationFeedbackGenerator().notificationOccurred(.success)
             }
         }
         
@@ -254,6 +283,9 @@ class EventManager: ObservableObject {
                     .execute()
 
                 joinedEventIDs.insert(eventId)
+                
+                
+                
                 
                 // Bump the joined counter up
                 if let index = events.firstIndex(where: { $0.id == eventId }) {
