@@ -15,7 +15,7 @@ struct DetailedEvent: Identifiable, Codable {
     var hostName: String = "Host"
     var location: String
     var experienceType: String
-    var created_by: UUID
+    var created_by: UUID?
     
     // MARK: - Semantic Form Fields
     var activity: String
@@ -38,27 +38,86 @@ struct DetailedEvent: Identifiable, Codable {
     var saved_events: [SavedEventReference]? = nil
     
     // MARK: - Computed Logic
+//    var generatedTitle: String {
+//        if minPeople == maxPeople {
+//            "\(hostName) wants \(Int(maxPeople)) \(connectionTarget) to go \(activity) with \(formattedDaysString)"
+//
+//        } else if minPeople == 0{
+//            "\(hostName) wants up to \(Int(maxPeople)) \(connectionTarget) to go \(activity) with \(formattedDaysString)"
+//
+//        }
+//        else {
+//            "\(hostName) wants \(Int(minPeople))-\(Int(maxPeople)) \(connectionTarget) to go \(activity) with \(formattedDaysString)"
+//        }
+//    }
+    
     var generatedTitle: String {
-        if minPeople == maxPeople {
-            "\(hostName) wants \(Int(maxPeople)) \(connectionTarget) to go \(activity) with \(formattedDaysString)"
+        let peopleText: String
 
-        } else if minPeople == 0{
-            "\(hostName) wants up to \(Int(maxPeople)) \(connectionTarget) to go \(activity) with \(formattedDaysString)"
-
+        if maxPeople < 2 {
+            peopleText = "one \(connectionTarget)"
+        } else if minPeople == 0 {
+            peopleText = "up to \(Int(maxPeople)) \(connectionTarget)"
+        } else if minPeople == maxPeople {
+            peopleText = "\(Int(maxPeople)) \(connectionTarget)"
+        } else {
+            peopleText =
+                "\(Int(minPeople))-\(Int(maxPeople)) \(connectionTarget)"
         }
-        else {
-            "\(hostName) wants \(Int(minPeople))-\(Int(maxPeople)) \(connectionTarget) to go \(activity) with \(formattedDaysString)"
+
+        if isSolid {
+            let eventDate =
+                selectedDays.first ?? "a confirmed date"
+
+            return """
+            \(hostName) is hosting \(activity) for \(peopleText) on \(eventDate) at \(formattedTimeString) at \(location)
+            """
+        } else {
+            return """
+            \(hostName) wants \(peopleText) to go \(activity) on \(formattedDaysString)
+            """
         }
     }
-    
+
     private var formattedDaysString: String {
-        if selectedDays.isEmpty { return "any day!" }
-        if selectedDays.count == 1 { return selectedDays[0] }
-        if selectedDays.count == 2 { return "\(selectedDays[0]) or \(selectedDays[1])" }
-        if selectedDays.count > 6 {return "any day!"}
+        if selectedDays.isEmpty {
+            return "anytime"
+        }
+
+        if selectedDays.count == 1 {
+            return selectedDays[0]
+        }
+
+        if selectedDays.count == 2 {
+            return "\(selectedDays[0]) or \(selectedDays[1])"
+        }
+
+        guard let lastDay = selectedDays.last else {
+            return "anytime"
+        }
+
+        let allButLast = selectedDays
+            .dropLast()
+            .joined(separator: ", ")
+
+        return "\(allButLast), or \(lastDay)"
+    }
+    
+    private var formattedTimeString: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "h:mm a"
+
+        return formatter.string(from: time)
+
+//     private var formattedDaysString: String {
+//         if selectedDays.isEmpty { return "any day!" }
+//         if selectedDays.count == 1 { return selectedDays[0] }
+//         if selectedDays.count == 2 { return "\(selectedDays[0]) or \(selectedDays[1])" }
+//         if selectedDays.count > 6 {return "any day!"}
         
-        let allButLast = selectedDays.dropLast().joined(separator: ", ")
-        return "\(allButLast), or \(selectedDays.last!)"
+//         let allButLast = selectedDays.dropLast().joined(separator: ", ")
+//         return "\(allButLast), or \(selectedDays.last!)"
+
     }
     
     var stylizedPreview: Text {
