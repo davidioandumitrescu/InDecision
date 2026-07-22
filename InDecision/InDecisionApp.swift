@@ -51,7 +51,11 @@ struct InDecisionApp: App {
                             .tag(0)
                         
                         NavigationStack{
-                            ExperienceCreateView()
+                            if (authManager.isSignedIn){
+                                ExperienceCreateView()
+                            } else {
+                                ProfileDestinationView()
+                            }
                         }
                         .tabItem {
                             Label("Create", systemImage: "plus")
