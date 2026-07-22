@@ -9,6 +9,8 @@ import Combine
 import Foundation
 import Supabase
 import SwiftUI
+import UIKit
+
 
 @MainActor
 class EventManager: ObservableObject {
@@ -134,6 +136,11 @@ class EventManager: ObservableObject {
     func toggleSave(for eventId: UUID, userID: UUID?) async {
         guard let userID else {
             errorMessage = "You need to sign in before saving events."
+
+            await MainActor.run {
+                UINotificationFeedbackGenerator().notificationOccurred(.error)
+            }
+
             return
         }
 
@@ -142,8 +149,11 @@ class EventManager: ObservableObject {
         } else {
             await saveEvent(eventId, userID: userID)
         }
-    }
 
+        await MainActor.run {
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        }
+    }
     func clearSavedEvents() {
         savedEventIDs = []
     }
@@ -227,9 +237,13 @@ class EventManager: ObservableObject {
             }
         }
 
+
         func toggleJoin(for eventId: UUID, userID: UUID?) async {
             guard let userID else {
                 errorMessage = "You need to sign in before joining events."
+                await MainActor.run {
+                    UINotificationFeedbackGenerator().notificationOccurred(.error)
+                }
                 return
             }
 
@@ -237,6 +251,10 @@ class EventManager: ObservableObject {
                 await leaveEvent(eventId, userID: userID)
             } else {
                 await joinEvent(eventId, userID: userID)
+            }
+
+            await MainActor.run {
+                UINotificationFeedbackGenerator().notificationOccurred(.success)
             }
         }
         

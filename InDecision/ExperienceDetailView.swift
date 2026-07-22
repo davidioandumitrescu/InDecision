@@ -306,6 +306,7 @@ struct ExperienceDetailView: View {
     
     private var actionButtonsArea: some View {
         VStack(spacing: 12) {
+            //Join Button
             Button(action: {
                 Task {
                     await eventManager.toggleJoin(for: event.id, userID: authManager.userID)
