@@ -263,13 +263,14 @@ private struct FlowLayout: Layout {
 struct ProfileView: View {
     @EnvironmentObject var authManager: AuthManager
     @EnvironmentObject var eventManager: EventManager
+    @EnvironmentObject var voiceManager: VoiceManager
     @Environment(\.dismiss) var dismiss
     
     
     
 
     // Theme Colors matching the mockup
-    private let bgTeal = Color.teal
+    private let bgTeal = Color.mint
     private let accentGreen = Color.green
     private let btnPurple = Color(red: 0.45, green: 0.35, blue: 0.95)
     
@@ -322,6 +323,10 @@ struct ProfileView: View {
                         profileHeader
                         
                         interestsSection
+                        
+                        Divider().background(Color.white.opacity(0.3))
+                        
+                        communitySoundSection
                         
                         Divider().background(Color.white.opacity(0.3))
                         
@@ -387,30 +392,7 @@ struct ProfileView: View {
                     selection: $selectedItem,
                     matching: .images
                 ) {
-                    if let avatarImage = authManager.avatarImage {
-                        Image(uiImage: avatarImage)
-                            .resizable()
-                            .scaledToFill()
-                            .frame(width: 90, height: 90)
-                            .clipShape(Circle())
-                            .overlay(
-                                Circle()
-                                    .stroke(btnPurple, lineWidth: 4)
-                            )
-                    } else {
-                        Image(systemName: "person.crop.circle.fill")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 90, height: 90)
-                            .foregroundColor(.white.opacity(0.9))
-                            .padding(4)
-                            .background(bgTeal)
-                            .clipShape(Circle())
-                            .overlay(
-                                Circle()
-                                    .stroke(btnPurple, lineWidth: 4)
-                            )
-                    }
+                    AvatarView(userID: authManager.userID, size: 100)
                 }
                 .disabled(isUploadingAvatar)
 
@@ -496,7 +478,6 @@ struct ProfileView: View {
         }
     }
     
-
     private func loadAvatar(from item: PhotosPickerItem?) async {
         guard let item else { return }
 
@@ -517,8 +498,7 @@ struct ProfileView: View {
             }
 
             let path = "\(userID.uuidString)/avatar.jpg"
-            
-            
+
             try await SupabaseManager.shared.client.storage
                 .from("avatars")
                 .upload(
@@ -529,14 +509,15 @@ struct ProfileView: View {
                         upsert: true
                     )
                 )
-                
-            
+
             print("Uploading path:", path)
             print("User ID:", userID.uuidString)
 
             let url = try SupabaseManager.shared.client.storage
                 .from("avatars")
                 .getPublicURL(path: path)
+
+            SupabaseManager.shared.invalidateAvatarCache(for: url.absoluteString)   // <-- new
 
             try await SupabaseManager.shared.client
                 .from("profiles")
@@ -551,7 +532,7 @@ struct ProfileView: View {
             }
 
             print("✅ Avatar uploaded")
-            
+
             await authManager.refreshSession()
 
         } catch {
@@ -574,20 +555,7 @@ struct ProfileView: View {
                     .font(.subheadline)
                     .foregroundColor(.white.opacity(0.8))
             } else {
-                FlowLayout(horizontalSpacing: 10, verticalSpacing: 10) {
-                    ForEach(myEvents) { event in
-                        NavigationLink {
-                            ExperienceDetailView(
-                                event: event,
-                                bgColor: bgTeal,
-                                nextColor: accentGreen
-                            )
-                        } label: {
-                            miniEventCard(for: event)
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
+                profileEventList(events: myEvents)
             }
         }
     }
@@ -603,23 +571,72 @@ struct ProfileView: View {
                     .font(.subheadline)
                     .foregroundColor(.white.opacity(0.8))
             } else {
-                FlowLayout(horizontalSpacing: 10, verticalSpacing: 10) {
-                    ForEach(historyEvents) { event in
-                        NavigationLink {
-                            ExperienceDetailView(
-                                event: event,
-                                bgColor: bgTeal,
-                                nextColor: accentGreen
-                            )
-                        } label: {
-                            miniEventCard(for: event)
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
+                profileEventList(events: historyEvents)
             }
         }
     }
+
+    private func profileEventList(events: [DetailedEvent]) -> some View {
+        VStack(spacing: 0) {
+            ForEach(Array(events.enumerated()), id: \.element.id) { index, event in
+                NavigationLink {
+                    ExperienceDetailView(
+                        event: event,
+                        bgColor: bgTeal,
+                        nextColor: accentGreen
+                    )
+                } label: {
+                    profileEventRow(for: event)
+                }
+                .buttonStyle(.plain)
+
+                if index < events.count - 1 {
+                    Divider()
+                        .overlay(Color.white.opacity(0.18))
+                        .padding(.leading, 16)
+                }
+            }
+        }
+        .background(Color.black.opacity(0.18))
+        .clipShape(RoundedRectangle(cornerRadius: 18))
+    }
+
+    private func profileEventRow(for event: DetailedEvent) -> some View {
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text(event.activity.isEmpty ? "Something fun" : event.activity.localizedCapitalized)
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.white)
+                    .lineLimit(2)
+
+                HStack(spacing: 5) {
+                    Image(systemName: "calendar")
+                    Text(scheduledDateText(for: event))
+                }
+                .font(.system(size: 13, weight: .medium))
+                .foregroundColor(.white.opacity(0.72))
+            }
+
+            Spacer(minLength: 8)
+
+            Image(systemName: "chevron.right")
+                .font(.system(size: 13, weight: .bold))
+                .foregroundColor(.white.opacity(0.55))
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(Rectangle())
+    }
+
+    private func scheduledDateText(for event: DetailedEvent) -> String {
+        let scheduledDays = event.selectedDays.isEmpty
+            ? "Any day"
+            : event.selectedDays.joined(separator: ", ")
+        let scheduledTime = event.time.formatted(date: .omitted, time: .shortened)
+        return "\(scheduledDays) · \(scheduledTime)"
+    }
+
     private var signOutButton: some View {
         Button(action: {
             Task {
@@ -642,6 +659,7 @@ struct ProfileView: View {
         }
     }
     
+
     // Reusable view for the mini event pills in the horizontal scroll views
     private func miniEventCard(for event: DetailedEvent) -> some View {
         HStack(spacing: 8) {
@@ -658,6 +676,25 @@ struct ProfileView: View {
         .background(Color.black.opacity(0.3))
         .clipShape(Capsule())
     }
+    
+    private var communitySoundSection: some View {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Community Join Sound")
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundColor(.black.opacity(0.6))
+                
+                Text("Record a fun noise or catchphrase. It might play when someone joins an event!")
+                    .font(.subheadline)
+                    .foregroundColor(.white.opacity(0.8))
+                
+                HStack {
+                    Spacer()
+                    RecordButtonView(btnPurple: btnPurple) // Pass your custom purple to match theme
+                    Spacer()
+                }
+                .padding(.top, 8)
+            }
+        }
 }
 
 
@@ -665,4 +702,5 @@ struct ProfileView: View {
     ProfileView()
         .environmentObject(EventManager())
         .environmentObject(AuthManager())
+        .environmentObject(VoiceManager())
 }

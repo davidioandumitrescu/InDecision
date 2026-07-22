@@ -8,6 +8,9 @@
 import SwiftUI
 
 struct ExperienceDetailView: View {
+    
+    @EnvironmentObject var voiceManager: VoiceManager
+
     let event: DetailedEvent
     
     // Dependencies
@@ -77,11 +80,20 @@ struct ExperienceDetailView: View {
                         
                         // Invisible spacer so the header doesn't cover your text
                         Spacer().frame(height: 60)
-                         
-                        Text("\(Int(currentEvent.maxPeople) - currentEvent.joinedCount) more people to reach goal!")
-                            .font(.system(size: 18, weight: .bold))
-                            .foregroundColor(.black.opacity(0.6))
-                            .padding(.top, 10)
+                        
+                        var goal = Int(currentEvent.maxPeople) - currentEvent.joinedCount
+                        if (goal > 0) {
+                            Text("\(goal) more people to reach goal!")
+                                .font(.system(size: 18, weight: .bold))
+                                .foregroundColor(.black.opacity(0.6))
+                                .padding(.top, 10)
+                        } else {
+                            Text("Event filled!")
+                                .font(.system(size: 18, weight: .bold))
+                                .foregroundColor(.black.opacity(0.6))
+                                .padding(.top, 10)
+                        }
+                        
                          
                         event.stylizedPreview
                             .font(.system(size: 32, weight: .bold))
@@ -162,9 +174,7 @@ struct ExperienceDetailView: View {
             
             // 2. The Profile Button
             NavigationLink(destination: ProfileDestinationView()) {
-                Image(systemName: "person.crop.circle.fill")
-                    .font(.system(size: 44))
-                    .foregroundColor(.white)
+                AvatarView(userID: authManager.userID)
             }
         }
         .padding(.top, 10)
@@ -266,26 +276,18 @@ struct ExperienceDetailView: View {
                             
                             Button(action: {
                                 selectedCardInfo = AttendeeCardInfo(
+                                    id: user.id,
                                     name: user.full_name ?? user.username,
                                     email: "No email provided",     // Placeholder
                                     hostedCount: isHost ? 5 : 1,   // Placeholder
-                                    interests: ["Music", "Coffee"],// Placeholder
+                                    interests: user.interests ?? [],
                                     isHost: isHost
                                 )
                             }) {
                                 VStack(spacing: 6) {
                                     ZStack(alignment: .bottomTrailing) {
                                         // The Gray Circle Placeholder
-                                        Image(systemName: "person.crop.circle.fill")
-                                            .resizable()
-                                            .frame(width: 54, height: 54)
-                                            .foregroundColor(.white.opacity(0.9))
-                                            .background(Circle().fill(Color.gray))
-                                            .clipShape(Circle())
-                                            // Purple border only for the host
-                                            .overlay(
-                                                Circle().stroke(isHost ? buttonPurple : Color.clear, lineWidth: isHost ? 3 : 0)
-                                            )
+                                        AvatarView(userID: user.id, size: 60)
                                         
                                         // Verified Badge for Host
                                         if isHost {
@@ -315,32 +317,36 @@ struct ExperienceDetailView: View {
     
     private var actionButtonsArea: some View {
         VStack(spacing: 12) {
+            // ----- Join Button -----
+            let isFull = currentEvent.joinedCount >= Int(currentEvent.maxPeople)
+            let joinDisabled = isFull && !isJoined
+
             Button(action: {
                 Task {
-                    withAnimation {
-                        Task { await eventManager.toggleJoin(for: event.id, userID: authManager.userID) }
-                    }
+                    await eventManager.toggleJoin(for: event.id, userID: authManager.userID)
+                    await refreshAttendees()
+                    voiceManager.playSessionSound()
                 }
             }) {
                 HStack {
                     Image(systemName: isJoined ? "checkmark.circle.fill" : "checkmark.circle")
-                    Text(isJoined ? "You are going" : "Yes, I'm in!")
+                    Text(joinDisabled ? "Event is full" : (isJoined ? "You are going" : "Yes, I'm in!"))
                 }
                 .font(.title3)
                 .fontWeight(.semibold)
-                .foregroundColor(isJoined ? buttonPurple : .white)
+                .foregroundColor(joinDisabled ? .gray : (isJoined ? buttonPurple : .white))
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 20)
-                .background(isJoined ? Color.white : buttonPurple)
+                .background(joinDisabled ? Color.gray.opacity(0.4) : (isJoined ? Color.white : buttonPurple))
                 .clipShape(Capsule())
-                .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
+                .shadow(color: joinDisabled ? .clear : .black.opacity(0.1), radius: 5, x: 0, y: 2)
             }
-            
+            .disabled(joinDisabled)
+
+            // ----- Save Button (unchanged) -----
             Button(action: {
                 Task {
-                    withAnimation {
-                        Task { await eventManager.toggleSave(for: event.id, userID: authManager.userID) }
-                    }
+                    await eventManager.toggleSave(for: event.id, userID: authManager.userID)
                 }
             }) {
                 Label(isSaved ? "Saved" : "Save for later", systemImage: isSaved ? "heart.fill" : "heart")
@@ -355,12 +361,20 @@ struct ExperienceDetailView: View {
             .padding(.bottom, 50)
         }
     }
+    
+    // MARK: - Helpers
+    
+    private func refreshAttendees() async {
+        isLoadingAttendees = true
+        attendees = await eventManager.getAttendees(for: currentEvent.id)
+        isLoadingAttendees = false
+    }
 }
 
 // MARK: - Popup Card Data & View
 
 struct AttendeeCardInfo: Identifiable {
-    let id = UUID()
+    let id: UUID
     let name: String
     let email: String
     let hostedCount: Int
@@ -372,21 +386,14 @@ struct ProfileCardSheet: View {
     let info: AttendeeCardInfo
     
     // Theme Colors
-    private let bgTeal = Color(red: 0.05, green: 0.78, blue: 0.67)
+    private let bgTeal = Color.mint
     private let btnPurple = Color(red: 0.50, green: 0.35, blue: 0.96)
     
     var body: some View {
         VStack(spacing: 20) {
             // Header Image
             ZStack(alignment: .bottomTrailing) {
-                Image(systemName: "person.crop.circle.fill")
-                    .resizable()
-                    .frame(width: 90, height: 90)
-                    .foregroundColor(.white.opacity(0.9))
-                    .padding(4)
-                    .background(bgTeal)
-                    .clipShape(Circle())
-                    .overlay(Circle().stroke(info.isHost ? btnPurple : Color.white.opacity(0.5), lineWidth: 4))
+                AvatarView(userID: info.id, size: 80)
                 
                 if info.isHost {
                     Image(systemName: "checkmark.seal.fill")
@@ -441,15 +448,18 @@ struct ProfileCardSheet: View {
                     .font(.caption.bold())
                     .foregroundColor(.white.opacity(0.8))
                 
-                HStack {
-                    ForEach(info.interests, id: \.self) { interest in
-                        Text(interest)
-                            .font(.caption.bold())
-                            .foregroundColor(btnPurple)
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 8)
-                            .background(Color.white)
-                            .clipShape(Capsule())
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(info.interests, id: \.self) { interest in
+                            Text(interest)
+                                .font(.caption.bold())
+                                .foregroundColor(btnPurple)
+                                .fixedSize()
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 8)
+                                .background(Color.white)
+                                .clipShape(Capsule())
+                        }
                     }
                 }
             }
