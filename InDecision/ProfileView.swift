@@ -270,9 +270,9 @@ struct ProfileView: View {
     
 
     // Theme Colors matching the mockup
-    private let bgTeal = Color.mint
+    private let bgTeal = Color("AppSurface")
     private let accentGreen = Color.green
-    private let btnPurple = Color(red: 0.45, green: 0.35, blue: 0.95)
+    private let btnPurple = Color("AppPrimary")
     
     // UI State
     @State private var interests: [String] = []
