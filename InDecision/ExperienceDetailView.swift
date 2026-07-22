@@ -310,9 +310,9 @@ struct ExperienceDetailView: View {
         VStack(spacing: 12) {
             Button(action: {
                 Task {
+                    voiceManager.playSessionSound()
                     await eventManager.toggleJoin(for: event.id, userID: authManager.userID)
                     await refreshAttendees()
-                    voiceManager.playSessionSound()
                 }
             }) {
                 HStack {
