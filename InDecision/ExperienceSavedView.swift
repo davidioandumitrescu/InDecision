@@ -51,7 +51,7 @@ struct ExperienceSavedView: View {
                     Spacer()
                 } else {
                     ScrollView(.vertical, showsIndicators: false) {
-                        VStack(alignment: .leading, spacing: 30) {
+                        VStack(alignment: .leading, spacing: 24) {
                             
                             // Joined Events Section
                             if !joinedEvents.isEmpty {
@@ -118,7 +118,7 @@ struct ExperienceSavedView: View {
     }
     
     private func eventSection(title: String, events: [DetailedEvent]) -> some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 12) {
             Text(title)
                 .font(.title2)
                 .bold()
@@ -138,42 +138,70 @@ struct ExperienceSavedView: View {
 // MARK: - Reusable Event Card
 struct EventCard: View {
     let event: DetailedEvent
+
+    private var activityTitle: String {
+        let trimmedActivity = event.activity.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmedActivity.isEmpty ? "Untitled Experience" : trimmedActivity.localizedCapitalized
+    }
+
+    private var primaryDay: String {
+        guard let firstDay = event.selectedDays.first else { return "ANY" }
+        return String(firstDay.prefix(3)).uppercased()
+    }
+
+    private var additionalDayText: String {
+        let additionalDayCount = max(event.selectedDays.count - 1, 0)
+        return additionalDayCount == 0 ? "DAY" : "+\(additionalDayCount) DAY"
+    }
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            // Uses the awesome stylized text from your model!
-            event.stylizedPreview
-                .font(.system(size: 22, weight: .bold))
-                .foregroundColor(.white)
-                .lineSpacing(4)
-                .multilineTextAlignment(.leading)
-            
-            Divider()
-                .background(Color.white.opacity(0.3))
-            
-            HStack {
-                HStack(spacing: 6) {
-                    Image(systemName: "mappin.and.ellipse")
-                        .foregroundColor(.white.opacity(0.7))
-                    Text(event.location.isEmpty ? "Undecided" : event.location)
-                        .foregroundColor(.white.opacity(0.9))
-                }
-                
-                Spacer()
-                
+        HStack(spacing: 16) {
+            VStack(alignment: .leading, spacing: 10) {
+                Text(activityTitle)
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundColor(.black.opacity(0.85))
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
+
                 HStack(spacing: 6) {
                     Image(systemName: "clock.fill")
-                        .foregroundColor(.white.opacity(0.7))
+                        .foregroundColor(.black.opacity(0.35))
                     Text(event.time.formatted(date: .omitted, time: .shortened))
-                        .foregroundColor(.white.opacity(0.9))
+                        .foregroundColor(.black.opacity(0.55))
+
+                    Image(systemName: "person.2.fill")
+                        .foregroundColor(.black.opacity(0.35))
+                        .padding(.leading, 4)
+                    Text("\(event.joinedCount)/\(Int(event.maxPeople))")
+                        .foregroundColor(.black.opacity(0.55))
                 }
+                .font(.subheadline.weight(.semibold))
             }
-            .font(.subheadline)
-            .fontWeight(.medium)
+
+            Spacer(minLength: 8)
+
+            VStack(spacing: 2) {
+                Text(primaryDay)
+                    .font(.system(size: 16, weight: .bold))
+                Text(additionalDayText)
+                    .font(.system(size: 10, weight: .semibold))
+            }
+            .foregroundColor(.black.opacity(0.55))
+            .frame(width: 64, height: 60)
+            .background(Color.black.opacity(0.06))
+            .clipShape(RoundedRectangle(cornerRadius: 12))
         }
-        .padding(20)
-        // Uses a nice dark semi-transparent glass effect that looks great on the teal
-        .background(Color.black.opacity(0.3))
-        .clipShape(RoundedRectangle(cornerRadius: 24))
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+        .frame(maxWidth: .infinity, minHeight: 92, alignment: .leading)
+        .background(Color.white.opacity(0.92))
+        .clipShape(RoundedRectangle(cornerRadius: 18))
     }
+}
+
+
+#Preview {
+    ExperienceSavedView()
+        .environmentObject(EventManager())
+        .environmentObject(AuthManager())
 }

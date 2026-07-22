@@ -109,6 +109,7 @@ struct DetailedEvent: Identifiable, Codable {
 
         return formatter.string(from: time)
 
+
 //     private var formattedDaysString: String {
 //         if selectedDays.isEmpty { return "any day!" }
 //         if selectedDays.count == 1 { return selectedDays[0] }
