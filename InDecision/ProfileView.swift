@@ -478,7 +478,6 @@ struct ProfileView: View {
         }
     }
     
-
     private func loadAvatar(from item: PhotosPickerItem?) async {
         guard let item else { return }
 
