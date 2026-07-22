@@ -191,11 +191,18 @@ struct OnboardingView: View {
     // Variation 2
     var phraseTwo: some View {
         var str = AttributedString()
-        str.append(textBlock("I want\n", color: .black))
-        str.append(textBlock("people ", color: .white, bg: .blue))
-        str.append(textBlock("to\nshare ", color: .black))
-        str.append(textBlock("this ", color: .yellow, bg: btnPurple))
-        str.append(textBlock("with.", color: .white))
+        str.append(textBlock("Erica", color: Color("ColorOrange"), bg: Color("ColorYellow")))
+        str.append(textBlock(" wants\n", color: Color("ColorBlack")))
+        str.append(textBlock("200 ", color: Color("AppSurface"), bg: Color("ColorBlack")))
+        str.append(textBlock(" ", color:Color("AppSurface")))
+        str.append(textBlock("doggos", color: .white, bg: accentGreen))
+        str.append(textBlock(" ", color:Color("AppSurface")))
+        str.append(textBlock("to feed ", color: .white))
+        str.append(textBlock("treats", color: .yellow, bg: btnPurple))
+        str.append(textBlock(" ", color:Color("AppSurface")))
+        str.append(textBlock("to ", color: .white))
+        
+        str.append(textBlock("today.", color: btnPurple))
         
         return Text(str)
             .font(.system(size: 48, weight: .bold, design: .default))
@@ -206,11 +213,18 @@ struct OnboardingView: View {
     // Variation 3
     var phraseThree: some View {
         var str = AttributedString()
-        str.append(textBlock("I'd love\nto ", color: .black))
-        str.append(textBlock("learn ", color: .black, bg: .orange))
-        str.append(textBlock("how\nto ", color: .black))
-        str.append(textBlock("bake ", color: .white, bg: .pink))
-        str.append(textBlock("\nthis weekend.", color: .white))
+        str.append(textBlock("Greg", color: Color("ColorOrange"), bg: Color("ColorYellow")))
+        str.append(textBlock(" wants\n", color: Color("ColorBlack")))
+        str.append(textBlock("3 ", color: Color("AppSurface"), bg: Color("ColorBlack")))
+        str.append(textBlock(" ", color:Color("AppSurface")))
+        str.append(textBlock("companions", color: .white, bg: accentGreen))
+        str.append(textBlock(" ", color:Color("AppSurface")))
+        str.append(textBlock("to ", color: .white))
+        str.append(textBlock("chat", color: .yellow, bg: btnPurple))
+        str.append(textBlock(" ", color:Color("AppSurface")))
+        str.append(textBlock("with ", color: .white))
+        
+        str.append(textBlock("this evening.", color: btnPurple))
         
         return Text(str)
             .font(.system(size: 48, weight: .bold, design: .default))
