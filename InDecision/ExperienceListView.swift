@@ -58,10 +58,17 @@ struct StaggeredEventCard: View {
         let shape = StaggeredBottomShape(steps: steps, stepHeight: stepHeight)
         
         VStack(alignment: .leading, spacing: 16) {
-            Text("\(remainingPeople) more people to reach goal!")
-                .font(.subheadline)
-                .fontWeight(.semibold)
+            if (remainingPeople > 0){
+                Text("\(remainingPeople) more people to reach goal!")
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                .foregroundColor(.white.opacity(0.8))}
+            else{
+                Text("Event filled!")
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
                 .foregroundColor(.white.opacity(0.8))
+            }
             
             NavigationLink(destination: ExperienceDetailView(event: event, bgColor: bgColor, nextColor: nextColor)) {
                 Text(event.generatedTitle)

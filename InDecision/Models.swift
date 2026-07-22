@@ -52,9 +52,10 @@ struct DetailedEvent: Identifiable, Codable {
     }
     
     private var formattedDaysString: String {
-        if selectedDays.isEmpty { return "anytime" }
+        if selectedDays.isEmpty { return "any day!" }
         if selectedDays.count == 1 { return selectedDays[0] }
         if selectedDays.count == 2 { return "\(selectedDays[0]) or \(selectedDays[1])" }
+        if selectedDays.count > 6 {return "any day!"}
         
         let allButLast = selectedDays.dropLast().joined(separator: ", ")
         return "\(allButLast), or \(selectedDays.last!)"
