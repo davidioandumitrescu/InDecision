@@ -418,7 +418,7 @@ struct ExperienceListView: View {
                             }
                             
                             NavigationLink(destination: ProfileDestinationView()) {
-                                AvatarView(userID: authManager.userID)
+                                AvatarView(userID: authManager.userID, size: 50)
                             }
                         }
                         .padding(.horizontal)
@@ -501,11 +501,11 @@ struct ExperienceListView: View {
                 }
             }
         }
-        .task {
-            await eventManager.loadEvents()
-            await eventManager.loadSavedEvents(for: authManager.userID)
-            await eventManager.loadJoinedEvents(for: authManager.userID)
-        }
+//        .task {
+//            await eventManager.loadEvents()
+//            await eventManager.loadSavedEvents(for: authManager.userID)
+//            await eventManager.loadJoinedEvents(for: authManager.userID)
+//        }
     }
     
     // MARK: - Haptic Handling
