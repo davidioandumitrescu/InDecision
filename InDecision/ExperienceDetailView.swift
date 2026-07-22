@@ -276,7 +276,7 @@ struct ExperienceDetailView: View {
                                 VStack(spacing: 6) {
                                     ZStack(alignment: .bottomTrailing) {
                                         // The Gray Circle Placeholder
-                                        AvatarView(userID: user.id)
+                                        AvatarView(userID: user.id, size: 60)
                                         
                                         // Verified Badge for Host
                                         if isHost {
@@ -308,9 +308,8 @@ struct ExperienceDetailView: View {
         VStack(spacing: 12) {
             Button(action: {
                 Task {
-                    withAnimation {
-                        Task { await eventManager.toggleJoin(for: event.id, userID: authManager.userID) }
-                    }
+                    await eventManager.toggleJoin(for: event.id, userID: authManager.userID)
+                    await refreshAttendees()
                 }
             }) {
                 HStack {
@@ -329,9 +328,7 @@ struct ExperienceDetailView: View {
             
             Button(action: {
                 Task {
-                    withAnimation {
-                        Task { await eventManager.toggleSave(for: event.id, userID: authManager.userID) }
-                    }
+                    await eventManager.toggleSave(for: event.id, userID: authManager.userID)
                 }
             }) {
                 Label(isSaved ? "Saved" : "Save for later", systemImage: isSaved ? "heart.fill" : "heart")
@@ -345,6 +342,14 @@ struct ExperienceDetailView: View {
             }
             .padding(.bottom, 50)
         }
+    }
+    
+    // MARK: - Helpers
+    
+    private func refreshAttendees() async {
+        isLoadingAttendees = true
+        attendees = await eventManager.getAttendees(for: currentEvent.id)
+        isLoadingAttendees = false
     }
 }
 
@@ -363,14 +368,14 @@ struct ProfileCardSheet: View {
     let info: AttendeeCardInfo
     
     // Theme Colors
-    private let bgTeal = Color(red: 0.05, green: 0.78, blue: 0.67)
+    private let bgTeal = Color.mint
     private let btnPurple = Color(red: 0.50, green: 0.35, blue: 0.96)
     
     var body: some View {
         VStack(spacing: 20) {
             // Header Image
             ZStack(alignment: .bottomTrailing) {
-                AvatarView(userID: info.id)
+                AvatarView(userID: info.id, size: 80)
                 
                 if info.isHost {
                     Image(systemName: "checkmark.seal.fill")

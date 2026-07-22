@@ -45,9 +45,10 @@ struct StaggeredBottomShape: Shape {
         return path
     }
 }
-
-// MARK: - 2. THE CARD VIEW
 struct StaggeredEventCard: View {
+    @EnvironmentObject var eventManager: EventManager
+    @EnvironmentObject var authManager: AuthManager
+
     var event: DetailedEvent
     var bgColor: Color
     var nextColor: Color
@@ -56,26 +57,41 @@ struct StaggeredEventCard: View {
     var steps: Int = 3
     var isFirstItem: Bool = false
     
+    // MARK: - Animation State
+    @State private var likeAnimationActive = false
+    
     var body: some View {
         let overlapAmount = stepHeight * CGFloat(steps - 1)
         let remainingPeople = max(0, Int(event.maxPeople) - event.joinedCount)
+        let shape = StaggeredBottomShape(steps: steps, stepHeight: stepHeight)
         
         VStack(alignment: .leading, spacing: 16) {
             Text("\(remainingPeople) more people to reach goal!")
                 .font(.subheadline)
                 .fontWeight(.semibold)
                 .foregroundColor(.white.opacity(0.8))
+            
             NavigationLink(destination: ExperienceDetailView(event: event, bgColor: bgColor, nextColor: nextColor)) {
                 Text(event.generatedTitle)
                     .font(.title2)
                     .bold()
                     .foregroundColor(.white)
                     .lineSpacing(4)
+                    .onTapGesture(count: 2) {
+                        // 1. Toggle like in the backend
+                        Task { await eventManager.toggleSave(for: event.id, userID: authManager.userID) }
+                        // 2. Trigger the animation
+                        withAnimation { likeAnimationActive = true }
+                        // 3. Reset after the animation finishes
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                            likeAnimationActive = false
+                        }
+                    }
             }
             .buttonStyle(PlainButtonStyle())
-            // Tags and Icons row
+            
+            // Tags and Icons row (unchanged)
             HStack(spacing: 12) {
-                // Proposed / Solid Tag
                 Text(event.isSolid ? "Solid" : "Proposed")
                     .font(.subheadline)
                     .fontWeight(.bold)
@@ -112,7 +128,137 @@ struct StaggeredEventCard: View {
         .padding(.bottom, 60 + overlapAmount)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(bgColor)
-        .clipShape(StaggeredBottomShape(steps: steps, stepHeight: stepHeight))
+        // MARK: - GLOW & SHINE OVERLAY
+        .overlay(
+            Group {
+                if likeAnimationActive {
+                    // Glow effect (pulse)
+                    Rectangle()
+                        .fill(Color.white.opacity(0.25))
+                        .blur(radius: 8)
+                        .scaleEffect(1.02)
+                        .transition(.opacity)
+                        .animation(.easeOut(duration: 0.3), value: likeAnimationActive)
+                    
+                    // Shine effect (moving diagonal stripe)
+                    ShineView(shape: shape)
+                }
+            }
+        )
+        .clipShape(shape)
+    }
+}
+
+struct ShineView: View {
+    let shape: StaggeredBottomShape
+    
+    @State private var offsetX: CGFloat = -1.0
+    
+    var body: some View {
+        GeometryReader { geometry in
+            Rectangle()
+                .fill(
+                    LinearGradient(
+                        gradient: Gradient(stops: [
+                            .init(color: .clear, location: 0),
+                            .init(color: .white.opacity(0.6), location: 0.3),
+                            .init(color: .white.opacity(0.9), location: 0.5),
+                            .init(color: .white.opacity(0.6), location: 0.7),
+                            .init(color: .clear, location: 1)
+                        ]),
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
+                .mask(shape)      // Clips the shine to the stair‑step shape
+                .offset(x: offsetX * geometry.size.width * 1.2)
+                .onAppear {
+                    withAnimation(.easeInOut(duration: 0.7)) {
+                        offsetX = 1.0
+                    }
+                }
+        }
+    }
+}
+
+private struct FilterBubbleLayout: Layout {
+    let horizontalSpacing: CGFloat
+    let verticalSpacing: CGFloat
+
+    func sizeThatFits(
+        proposal: ProposedViewSize,
+        subviews: Subviews,
+        cache: inout ()
+    ) -> CGSize {
+        let rows = makeRows(maxWidth: proposal.width ?? .infinity, subviews: subviews)
+        let contentWidth = rows.map(\.width).max() ?? 0
+        let contentHeight = rows.reduce(0) { $0 + $1.height }
+            + verticalSpacing * CGFloat(max(rows.count - 1, 0))
+
+        return CGSize(width: proposal.width ?? contentWidth, height: contentHeight)
+    }
+
+    func placeSubviews(
+        in bounds: CGRect,
+        proposal: ProposedViewSize,
+        subviews: Subviews,
+        cache: inout ()
+    ) {
+        let rows = makeRows(maxWidth: bounds.width, subviews: subviews)
+        var y = bounds.minY
+
+        for row in rows {
+            var x = bounds.minX
+
+            for item in row.items {
+                item.subview.place(
+                    at: CGPoint(x: x, y: y + (row.height - item.size.height) / 2),
+                    anchor: .topLeading,
+                    proposal: ProposedViewSize(item.size)
+                )
+                x += item.size.width + horizontalSpacing
+            }
+
+            y += row.height + verticalSpacing
+        }
+    }
+
+    private func makeRows(maxWidth: CGFloat, subviews: Subviews) -> [Row] {
+        var rows: [Row] = []
+        var currentRow = Row()
+
+        for subview in subviews {
+            let size = subview.sizeThatFits(.unspecified)
+            let requiredWidth = currentRow.items.isEmpty
+                ? size.width
+                : currentRow.width + horizontalSpacing + size.width
+
+            if !currentRow.items.isEmpty, requiredWidth > maxWidth {
+                rows.append(currentRow)
+                currentRow = Row()
+            }
+
+            currentRow.items.append(Item(subview: subview, size: size))
+            currentRow.width += (currentRow.items.count == 1 ? 0 : horizontalSpacing) + size.width
+            currentRow.height = max(currentRow.height, size.height)
+        }
+
+        if !currentRow.items.isEmpty {
+            rows.append(currentRow)
+        }
+
+        return rows
+    }
+
+    private struct Item {
+        let subview: LayoutSubview
+        let size: CGSize
+    }
+
+    private struct Row {
+        var items: [Item] = []
+        var width: CGFloat = 0
+        var height: CGFloat = 0
     }
 }
 
@@ -124,14 +270,14 @@ struct ExperienceListView: View {
     // MARK: - Filter States
     @State private var searchText = ""
     @State private var selectedFilter = 0
-    @State private var typeFilter: String = "All"
+    @State private var selectedTypes: Set<String> = []
     
     let experienceTypes = ["All", "Teach", "Demonstrate", "StoryTell", "Build", "Mentor", "Explore", "Discuss", "Practice"]
     
-    let palette: [Color] = [.teal, .green, .yellow, .orange]
+    let palette: [Color] = [.mint, .green, .yellow, .orange]
     let stepCount = 3
     let stepHeight: CGFloat = 30
-    
+
     // MARK: - Filter Logic (Now uses eventManager.events!)
     var filterEvents: [DetailedEvent] {
         eventManager.events.filter { event in
@@ -142,7 +288,7 @@ struct ExperienceListView: View {
             else if selectedFilter == 2 { matchesSegment = event.isSolid }
             else { matchesSegment = true }
             
-            let matchesType = (typeFilter == "All") || (event.experienceType == typeFilter)
+            let matchesType = selectedTypes.isEmpty || selectedTypes.contains(event.experienceType)
             
             return matchesSearch && matchesSegment && matchesType
         }
@@ -219,13 +365,27 @@ struct ExperienceListView: View {
                             // Filter Dropdown Button
                             Menu {
                                 ForEach(experienceTypes, id: \.self) { type in
-                                    Button(action: { typeFilter = type }) {
-                                        if typeFilter == type {
-                                            Label(type, systemImage: "checkmark")
-                                        } else {
-                                            Text(type)
-                                        }
-                                    }
+                                    Toggle(
+                                        type,
+                                        isOn: Binding(
+                                            get: {
+                                                type == "All"
+                                                    ? selectedTypes.isEmpty
+                                                    : selectedTypes.contains(type)
+                                            },
+                                            set: { isSelected in
+                                                if type == "All" {
+                                                    if isSelected {
+                                                        selectedTypes.removeAll()
+                                                    }
+                                                } else if isSelected {
+                                                    selectedTypes.insert(type)
+                                                } else {
+                                                    selectedTypes.remove(type)
+                                                }
+                                            }
+                                        )
+                                    )
                                 }
                             } label: {
                                 Image(systemName: "line.3.horizontal.decrease")
@@ -254,22 +414,52 @@ struct ExperienceListView: View {
                         .padding(.horizontal)
                         
                         // 3. Active Filter Indicator
-                        if typeFilter != "All" {
-                            HStack {
-                                Text("Filtered by: **\(typeFilter)**")
-                                    .font(.caption)
-                                    .foregroundColor(.black)
-                                Spacer()
-                                Button(action: { typeFilter = "All" }) {
-                                    Image(systemName: "xmark.circle.fill")
-                                        .foregroundColor(.black.opacity(0.6))
+                        if !selectedTypes.isEmpty {
+                            FilterBubbleLayout(horizontalSpacing: 8, verticalSpacing: 8) {
+                                ForEach(experienceTypes.filter { selectedTypes.contains($0) }, id: \.self) { type in
+                                    Button {
+                                        selectedTypes.remove(type)
+                                    } label: {
+                                        HStack(spacing: 6) {
+                                            Text(type)
+                                            Image(systemName: "xmark")
+                                        }
+                                        .font(.caption.weight(.semibold))
+                                        .foregroundColor(.black.opacity(0.7))
+                                        .padding(.horizontal, 12)
+                                        .padding(.vertical, 7)
+                                        .background(Color.white.opacity(0.85))
+                                        .clipShape(Capsule())
+                                    }
+                                    .buttonStyle(.plain)
+                                    .accessibilityLabel("Remove \(type) filter")
                                 }
                             }
                             .padding(.horizontal)
                         }
                     }
+                    .padding(.horizontal)
                     .padding(.top, 8)
-                    .padding(.bottom, 12)
+                    .padding(.bottom, 24)
+                    .frame(maxWidth: .infinity)
+                    .background {
+                        Rectangle()
+                            .fill(.ultraThinMaterial)
+                            .mask {
+                                LinearGradient(
+                                    stops: [
+                                        .init(color: .black, location: 0.0),
+                                        .init(color: .black, location: 0.65),
+                                        .init(color: .black.opacity(0.7), location: 0.82),
+                                        .init(color: .black.opacity(0.25), location: 0.94),
+                                        .init(color: .clear, location: 1.0)
+                                    ],
+                                    startPoint: .top,
+                                    endPoint: .bottom
+                                )
+                            }
+                            .ignoresSafeArea(edges: .top)
+                    }
                     .zIndex(1)
                 }
                 .frame(width: geo.size.width, height: geo.size.height)
@@ -288,4 +478,10 @@ struct ExperienceListView: View {
             //}
         }
     }
+}
+
+#Preview {
+    ExperienceListView()
+        .environmentObject(EventManager())
+        .environmentObject(AuthManager())
 }

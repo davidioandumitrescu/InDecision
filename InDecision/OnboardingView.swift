@@ -18,9 +18,16 @@ struct OnboardingView: View {
     let timer = Timer.publish(every: 4, on: .main, in: .common).autoconnect()
     
     // MARK: - Theme Colors
-    private let bgTeal = Color(red: 0.05, green: 0.78, blue: 0.67)
+// <<<<<<< itroy
+//     private let bgTeal = Color("AppSurface")
+//     // private let bgTeal = Color("red: 0.05, green: 0.78, blue: 0.67")
+//     private let accentGreen = Color("ColorGreen")
+//     private let btnPurple = Color("AppPrimary")
+// =======
+    private let bgTeal = Color.mint
     private let accentGreen = Color(red: 0.20, green: 0.80, blue: 0.35)
     private let btnPurple = Color(red: 0.50, green: 0.35, blue: 0.96)
+// >>>>>>> dev
     private let darkCyan = Color(red: 0.0, green: 0.5, blue: 0.5)
     
     var body: some View {
@@ -167,13 +174,17 @@ struct OnboardingView: View {
     // Variation 1 (Matches the visual mockup)
     var phraseOne: some View {
         var str = AttributedString()
-        str.append(textBlock("Dan ", color: .orange, bg: .yellow))
-        str.append(textBlock("wants\n", color: .black))
-        str.append(textBlock("2-6 ", color: .black, bg: darkCyan))
-        str.append(textBlock("people ", color: .white, bg: accentGreen))
-        str.append(textBlock("to\ndo ", color: .white))
-        str.append(textBlock("tai-chi ", color: .yellow, bg: btnPurple))
-        str.append(textBlock("with\n", color: .white))
+        str.append(textBlock("Dan", color: Color("ColorOrange"), bg: Color("ColorYellow")))
+        str.append(textBlock(" wants\n", color: Color("ColorBlack")))
+        str.append(textBlock("2-6 ", color: Color("AppSurface"), bg: Color("ColorBlack")))
+        str.append(textBlock(" ", color:Color("AppSurface")))
+        str.append(textBlock("people", color: .white, bg: accentGreen))
+        str.append(textBlock(" ", color:Color("AppSurface")))
+        str.append(textBlock("to do ", color: .white))
+        str.append(textBlock("tai-chi", color: .yellow, bg: btnPurple))
+        str.append(textBlock(" ", color:Color("AppSurface")))
+        str.append(textBlock("with", color: .white))
+        
         str.append(textBlock("tomorrow.", color: btnPurple))
         
         return Text(str)
