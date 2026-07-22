@@ -263,6 +263,7 @@ private struct FlowLayout: Layout {
 struct ProfileView: View {
     @EnvironmentObject var authManager: AuthManager
     @EnvironmentObject var eventManager: EventManager
+    @EnvironmentObject var voiceManager: VoiceManager
     @Environment(\.dismiss) var dismiss
     
     
@@ -322,6 +323,10 @@ struct ProfileView: View {
                         profileHeader
                         
                         interestsSection
+                        
+                        Divider().background(Color.white.opacity(0.3))
+                        
+                        communitySoundSection
                         
                         Divider().background(Color.white.opacity(0.3))
                         
@@ -635,6 +640,25 @@ struct ProfileView: View {
         .background(Color.black.opacity(0.3))
         .clipShape(Capsule())
     }
+    
+    private var communitySoundSection: some View {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Community Join Sound")
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundColor(.black.opacity(0.6))
+                
+                Text("Record a fun noise or catchphrase. It might play when someone joins an event!")
+                    .font(.subheadline)
+                    .foregroundColor(.white.opacity(0.8))
+                
+                HStack {
+                    Spacer()
+                    RecordButtonView(btnPurple: btnPurple) // Pass your custom purple to match theme
+                    Spacer()
+                }
+                .padding(.top, 8)
+            }
+        }
 }
 
 
@@ -642,4 +666,5 @@ struct ProfileView: View {
     ProfileView()
         .environmentObject(EventManager())
         .environmentObject(AuthManager())
+        .environmentObject(VoiceManager())
 }
