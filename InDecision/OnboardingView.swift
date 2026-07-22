@@ -14,161 +14,206 @@ struct OnboardingView: View {
     
     @State private var currentIndex = 0
     
-    // Cycles every 4 seconds. You can adjust this duration.
+    // Cycles every 4 seconds.
     let timer = Timer.publish(every: 4, on: .main, in: .common).autoconnect()
+    
+    // MARK: - Theme Colors
+    private let bgTeal = Color.mint
+    private let accentGreen = Color(red: 0.20, green: 0.80, blue: 0.35)
+    private let btnPurple = Color(red: 0.50, green: 0.35, blue: 0.96)
+    private let darkCyan = Color(red: 0.0, green: 0.5, blue: 0.5)
     
     var body: some View {
         NavigationStack {
-            VStack(spacing: 0) {
+            ZStack {
+                // 1. Background Layers
+                bgTeal.ignoresSafeArea()
                 
-                // MARK: - HEADER
-                HStack {
-                    Image(systemName: "person.3.fill")
-                        .font(.title)
+                // Bottom Right Staggered Shape
+                VStack {
+                    Spacer()
+                    HStack {
+                        Spacer()
+                        VStack(alignment: .trailing, spacing: 0) {
+                            accentGreen.frame(width: 130, height: 70)
+                            accentGreen.frame(width: 250, height: 70)
+                        }
+                    }
+                }
+                .ignoresSafeArea(edges: .bottom)
+                
+                // 2. Main Content Layer
+                VStack(spacing: 0) {
                     
-                    Text("Bloop")
-                        .font(.title)
-                        .bold()
+                    // MARK: - HEADER
+                    HStack {
+                        HStack(spacing: 8) {
+                            Image("BloopLogo-Sml")
+                        
+                        }
+                        .foregroundColor(.white)
+                        
+                        Spacer()
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.top, 16)
                     
                     Spacer()
-                }
-                .padding(.horizontal, 20) // Pushed further left
-                .padding(.top, 16)
-                
-                Spacer()
-                
-                // MARK: - ANIMATED TEXT AREA
-                ZStack(alignment: .leading) {
-                    if currentIndex == 0 {
-                        phraseOne
-                            .transition(.opacity)
-                            .id(0)
-                    } else if currentIndex == 1 {
-                        phraseTwo
-                            .transition(.opacity)
-                            .id(1)
-                    } else {
-                        phraseThree
-                            .transition(.opacity)
-                            .id(2)
-                    }
-                }
-                .padding(.horizontal, 20) // Pushed further left
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .animation(.easeInOut(duration: 1.0), value: currentIndex)
-                
-                Spacer()
-                Spacer() // Added a second spacer to push the buttons further down
-                
-                // MARK: - ACTION BUTTONS
-                VStack(spacing: 16) {
                     
-                    // 1. Find things to do -> Enters App (Tab 0)
-                    Button(action: {
-                        eventManager.selectedTab = 0
-                        hasSeenOnboarding = true
-                    }) {
-                        HStack {
-                            Image(systemName: "magnifyingglass")
-                            Text("Find things to do")
+                    // MARK: - ANIMATED TEXT AREA
+                    ZStack(alignment: .leading) {
+                        if currentIndex == 0 {
+                            phraseOne
+                                .transition(.opacity)
+                                .id(0)
+                        } else if currentIndex == 1 {
+                            phraseTwo
+                                .transition(.opacity)
+                                .id(1)
+                        } else {
+                            phraseThree
+                                .transition(.opacity)
+                                .id(2)
                         }
-                        .font(.title3) // Made text bigger
-                        .fontWeight(.semibold)
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 20) // Made button taller
-                        .background(Color.black)
-                        .clipShape(Capsule())
                     }
+                    .padding(.horizontal, 24)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .animation(.easeInOut(duration: 0.8), value: currentIndex)
                     
-                    // 2. Start something new -> Enters App (Tab 1)
-                    Button(action: {
-                        eventManager.selectedTab = 1
-                        hasSeenOnboarding = true
-                    }) {
-                        HStack {
-                            Image(systemName: "text.badge.plus")
-                            Text("Start something new")
-                        }
-                        .font(.title3) // Made text bigger
-                        .fontWeight(.semibold)
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 20) // Made button taller
-                        .background(Color(red: 0.4, green: 0.35, blue: 0.96))
-                        .clipShape(Capsule())
-                    }
+                    Spacer()
                     
-                    // 3. I'm not sure -> Slides to InfoView
-                    NavigationLink(destination: InfoView()) {
-                        HStack(spacing: 6) {
-                            Image(systemName: "questionmark.circle")
-                            Text("I'm not sure")
-                        }
-                        .font(.headline) // Increased from subheadline
-                        .foregroundColor(Color(red: 0.4, green: 0.35, blue: 0.96))
+                    // MARK: - SUBTEXT
+                    VStack(spacing: 6) {
+                        Text("Connect with ") + Text("local").underline() + Text(" people")
+                        Text("doing fun things.")
                     }
-                    .padding(.top, 8)
+                    .font(.system(size: 18, weight: .medium))
+                    .foregroundColor(.white)
+                    .multilineTextAlignment(.center)
+                    .padding(.bottom, 30)
+                    
+                    // MARK: - ACTION BUTTONS
+                    VStack(spacing: 16) {
+                        
+                        // 1. Find things to do
+                        Button(action: {
+                            eventManager.selectedTab = 0
+                            hasSeenOnboarding = true
+                        }) {
+                            HStack {
+                                Image(systemName: "magnifyingglass")
+                                Text("Find things to do")
+                            }
+                            .font(.title3)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 18)
+                            .background(btnPurple)
+                            .clipShape(Capsule())
+                        }
+                        
+                        // 2. Start something new
+                        Button(action: {
+                            eventManager.selectedTab = 1
+                            hasSeenOnboarding = true
+                        }) {
+                            HStack {
+                                Image(systemName: "text.badge.plus")
+                                Text("Start something new")
+                            }
+                            .font(.title3)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 18)
+                            .background(Color.black)
+                            .clipShape(Capsule())
+                        }
+                        
+                        // 3. I'm not sure
+                        NavigationLink(destination: InfoView()) {
+                            HStack(spacing: 6) {
+                                Image(systemName: "questionmark.circle")
+                                Text("I'm not sure")
+                            }
+                            .font(.headline)
+                            .foregroundColor(btnPurple)
+                        }
+                        .padding(.top, 8)
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 50)
                 }
-                .padding(.horizontal, 20)
-                .padding(.bottom, 48) // Pushed slightly closer to the bottom edge
             }
-            .background(Color(.systemGroupedBackground).ignoresSafeArea())
             .onReceive(timer) { _ in
-                // Cycle through the 3 phrases
                 currentIndex = (currentIndex + 1) % 3
             }
         }
     }
     
-    // MARK: - TEXT VARIATIONS
+    // MARK: - TEXT VARIATIONS (Using AttributedString for highlighted backgrounds)
     
-    // Variation 1
+    // Helper function to easily generate highlighted text blocks
+    private func textBlock(_ string: String, color: Color, bg: Color? = nil) -> AttributedString {
+        var attr = AttributedString(string)
+        attr.foregroundColor = color
+        if let bg = bg {
+            attr.backgroundColor = bg
+        }
+        return attr
+    }
+    
+    // Variation 1 (Matches the visual mockup)
     var phraseOne: some View {
-        Text("""
-        \(Text("I want \n").foregroundColor(.black))\
-        \(Text("people").foregroundColor(.blue).underline())\
-        \(Text(" to \n").foregroundColor(.black))\
-        \(Text("share").foregroundColor(.blue).underline())\
-        \(Text(" this \nwith.").foregroundColor(.black))
-        """)
-        .font(.system(size: 44, weight: .bold, design: .default)) // Dropped to 44 to ensure it doesn't accidentally wrap weirdly on smaller phones
-        .lineSpacing(4)
-        .multilineTextAlignment(.leading)
+        var str = AttributedString()
+        str.append(textBlock("Dan ", color: .orange, bg: .yellow))
+        str.append(textBlock("wants\n", color: .black))
+        str.append(textBlock("2-6 ", color: .black, bg: darkCyan))
+        str.append(textBlock("people ", color: .white, bg: accentGreen))
+        str.append(textBlock("to\ndo ", color: .white))
+        str.append(textBlock("tai-chi ", color: .yellow, bg: btnPurple))
+        str.append(textBlock("with\n", color: .white))
+        str.append(textBlock("tomorrow.", color: btnPurple))
+        
+        return Text(str)
+            .font(.system(size: 48, weight: .bold, design: .default))
+            .lineSpacing(6)
+            .multilineTextAlignment(.leading)
     }
     
     // Variation 2
     var phraseTwo: some View {
-        Text("""
-        \(Text("Dan ").foregroundColor(.blue))\
-        \(Text("wants \n").foregroundColor(.black))\
-        \(Text("2-6 ").foregroundColor(.orange).underline(true, color: .orange))\
-        \(Text("people").foregroundColor(.blue).underline(true, color: .blue))\
-        \(Text(" to \n").foregroundColor(.black))\
-        \(Text("do ").foregroundColor(.blue).underline(true, color: .blue))\
-        \(Text("tai-chi ").foregroundColor(.green))\
-        \(Text("with \ntomorrow").foregroundColor(.black))
-        """)
-        .font(.system(size: 44, weight: .bold, design: .default))
-        .lineSpacing(4)
-        .multilineTextAlignment(.leading)
+        var str = AttributedString()
+        str.append(textBlock("I want\n", color: .black))
+        str.append(textBlock("people ", color: .white, bg: .blue))
+        str.append(textBlock("to\nshare ", color: .black))
+        str.append(textBlock("this ", color: .yellow, bg: btnPurple))
+        str.append(textBlock("with.", color: .white))
+        
+        return Text(str)
+            .font(.system(size: 48, weight: .bold, design: .default))
+            .lineSpacing(6)
+            .multilineTextAlignment(.leading)
     }
     
     // Variation 3
     var phraseThree: some View {
-        Text("""
-        \(Text("I'd love \nto ").foregroundColor(.black))\
-        \(Text("learn ").foregroundColor(.orange).underline(true, color: .orange))\
-        \(Text("how \nto ").foregroundColor(.black))\
-        \(Text("bake ").foregroundColor(.purple).underline(true, color: .purple))\
-        \(Text("this \nweekend.").foregroundColor(.black))
-        """)
-        .font(.system(size: 44, weight: .bold, design: .default))
-        .lineSpacing(4)
-        .multilineTextAlignment(.leading)
+        var str = AttributedString()
+        str.append(textBlock("I'd love\nto ", color: .black))
+        str.append(textBlock("learn ", color: .black, bg: .orange))
+        str.append(textBlock("how\nto ", color: .black))
+        str.append(textBlock("bake ", color: .white, bg: .pink))
+        str.append(textBlock("\nthis weekend.", color: .white))
+        
+        return Text(str)
+            .font(.system(size: 48, weight: .bold, design: .default))
+            .lineSpacing(6)
+            .multilineTextAlignment(.leading)
     }
 }
 
 #Preview {
     OnboardingView()
+        .environmentObject(EventManager())
 }

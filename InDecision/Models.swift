@@ -12,32 +12,43 @@ struct DetailedEvent: Identifiable, Codable {
     var id = UUID()
     
     // MARK: - Host Info
-    var hostName: String
+    var hostName: String = "Host"
     var location: String
     var experienceType: String
-    var created_by: UUID? = nil
+    var created_by: UUID
     
     // MARK: - Semantic Form Fields
     var activity: String
     var connectionTarget: String
-    var minPeople: Int
-    var maxPeople: Int
+    var minPeople: Double
+    var maxPeople: Double
     var selectedDays: [String]
-    var time: String
-    
-    // MARK: - Counters
-    var likeCount: Int
-    var joinedCount: Int
-    
+    var time: Date
+    var imgUrl: String
+    var description: String
     
     // MARK: - Status
-    /// false = Proposed (0 in DB), true = Solid (1 in DB)
     var isSolid: Bool = false
     
-    // MARK: - Computed Logic
+    // MARK: - Counters
+    var likeCount: Int = 0
+    var joinedCount: Int = 0
     
+    // MARK: - Supabase Relationship
+    var saved_events: [SavedEventReference]? = nil
+    
+    // MARK: - Computed Logic
     var generatedTitle: String {
-        "\(hostName) wants \(minPeople)-\(maxPeople) \(connectionTarget) to go \(activity) with \(formattedDaysString)"
+        if minPeople == maxPeople {
+            "\(hostName) wants \(Int(maxPeople)) \(connectionTarget) to go \(activity) with \(formattedDaysString)"
+
+        } else if minPeople == 0{
+            "\(hostName) wants up to \(Int(maxPeople)) \(connectionTarget) to go \(activity) with \(formattedDaysString)"
+
+        }
+        else {
+            "\(hostName) wants \(Int(minPeople))-\(Int(maxPeople)) \(connectionTarget) to go \(activity) with \(formattedDaysString)"
+        }
     }
     
     private var formattedDaysString: String {
@@ -50,56 +61,40 @@ struct DetailedEvent: Identifiable, Codable {
     }
     
     var stylizedPreview: Text {
-            Text("""
-            \(Text("\(hostName) ").foregroundColor(.blue))\
-            \(Text("wants ").foregroundColor(.black))\
-            \(Text("\(minPeople)-\(maxPeople) ").foregroundColor(.orange))\
-            \(Text("\(connectionTarget) ").foregroundColor(.blue))\
-            \(Text("to \ngo ").foregroundColor(.black))\
-            \(Text("\(activity) ").foregroundColor(.green))\
-            \(Text("with ").foregroundColor(.black))\
-            \(styledDaysText)
-            """)
-        }
+        Text(generatedTitle)
+    }
     
-    private var styledDaysText: Text {
-        if selectedDays.isEmpty {
-            return Text("anytime").foregroundColor(.blue)
-        }
-        if selectedDays.count == 1 {
-            return Text(selectedDays[0]).foregroundColor(.blue)
-        }
-        if selectedDays.count == 2 {
-            return Text(selectedDays[0]).foregroundColor(.blue)
-                + Text(" or ").foregroundColor(.black)
-                + Text(selectedDays[1]).foregroundColor(.blue)
-        }
-        
-        var multiDayText = Text("")
-        for (index, day) in selectedDays.enumerated() {
-            if index == selectedDays.count - 1 {
-                multiDayText = multiDayText + Text("or ").foregroundColor(.black) + Text(day).foregroundColor(.blue)
-            } else {
-                multiDayText = multiDayText + Text("\(day), ").foregroundColor(.blue)
-            }
-        }
-        return multiDayText
+    enum CodingKeys: String, CodingKey {
+        case id
+        case hostName = "host_name"
+        case location
+        case experienceType = "experience_type"
+        case created_by
+        case activity
+        case connectionTarget = "connection_target"
+        case minPeople = "min_people"
+        case maxPeople = "max_people"
+        case selectedDays = "selected_days"
+        case time
+        case imgUrl = "img_url"
+        case description
+        case isSolid = "is_solid"
+        case likeCount = "like_count"
+        case joinedCount = "joined_count"
+        case saved_events
     }
 }
 
-
-struct User: Identifiable, Codable {
-    var id: String = UUID().uuidString
-    var name: String
-    var email: String
-    var phonenumber: String
-    var gender: String
+struct SavedEventReference: Codable {
+    let id: UUID?
 }
 
 struct Profile: Identifiable, Codable {
     let id: UUID
     let username: String
     let full_name: String?
+    let avatar_url: String?
+    let interests: [String]?
 }
 
 struct SavedEvent: Codable {

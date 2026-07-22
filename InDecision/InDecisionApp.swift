@@ -76,7 +76,7 @@ struct InDecisionApp: App {
                         }
                     } message: {
                         Text("If you leave this tab, all your entered details will be lost.")
-                    }
+                    }.toolbar(.hidden, for: .tabBar)
                 }
             }
             // 2. Attach modifiers ONCE to the Group
