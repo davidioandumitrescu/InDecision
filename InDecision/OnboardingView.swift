@@ -20,8 +20,8 @@ struct OnboardingView: View {
     // MARK: - Theme Colors
 
     private let bgTeal = Color("AppSurface")
-    private let accentGreen = Color("ColorGreen")
     private let accent = Color("AccentColor")
+    private let accentGreen = Color("ColorGreen")
     private let btnPurple = Color("AppPrimary")
     private let darkCyan = Color(red: 0.0, green: 0.5, blue: 0.5)
     
