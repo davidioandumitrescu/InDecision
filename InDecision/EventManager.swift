@@ -171,8 +171,10 @@ class EventManager: ObservableObject {
                 .insert(savedEvent)
                 .execute()
 
-            errorMessage = ""
-            
+            // ✅ Insert the ID into the local set so the UI refreshes
+            savedEventIDs.insert(eventId)
+
+            // Update local event's likeCount
             if let index = events.firstIndex(where: { $0.id == eventId }) {
                 events[index].likeCount += 1
                 try await SupabaseManager.shared.client
@@ -181,6 +183,8 @@ class EventManager: ObservableObject {
                     .eq("id", value: eventId.uuidString)
                     .execute()
             }
+
+            errorMessage = ""
         } catch {
             errorMessage = error.localizedDescription
             print("❌ Failed to save event:", error)
