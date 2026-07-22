@@ -551,20 +551,7 @@ struct ProfileView: View {
                     .font(.subheadline)
                     .foregroundColor(.white.opacity(0.8))
             } else {
-                FlowLayout(horizontalSpacing: 10, verticalSpacing: 10) {
-                    ForEach(myEvents) { event in
-                        NavigationLink {
-                            ExperienceDetailView(
-                                event: event,
-                                bgColor: bgTeal,
-                                nextColor: accentGreen
-                            )
-                        } label: {
-                            miniEventCard(for: event)
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
+                profileEventList(events: myEvents)
             }
         }
     }
@@ -580,23 +567,72 @@ struct ProfileView: View {
                     .font(.subheadline)
                     .foregroundColor(.white.opacity(0.8))
             } else {
-                FlowLayout(horizontalSpacing: 10, verticalSpacing: 10) {
-                    ForEach(historyEvents) { event in
-                        NavigationLink {
-                            ExperienceDetailView(
-                                event: event,
-                                bgColor: bgTeal,
-                                nextColor: accentGreen
-                            )
-                        } label: {
-                            miniEventCard(for: event)
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
+                profileEventList(events: historyEvents)
             }
         }
     }
+
+    private func profileEventList(events: [DetailedEvent]) -> some View {
+        VStack(spacing: 0) {
+            ForEach(Array(events.enumerated()), id: \.element.id) { index, event in
+                NavigationLink {
+                    ExperienceDetailView(
+                        event: event,
+                        bgColor: bgTeal,
+                        nextColor: accentGreen
+                    )
+                } label: {
+                    profileEventRow(for: event)
+                }
+                .buttonStyle(.plain)
+
+                if index < events.count - 1 {
+                    Divider()
+                        .overlay(Color.white.opacity(0.18))
+                        .padding(.leading, 16)
+                }
+            }
+        }
+        .background(Color.black.opacity(0.18))
+        .clipShape(RoundedRectangle(cornerRadius: 18))
+    }
+
+    private func profileEventRow(for event: DetailedEvent) -> some View {
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text(event.activity.isEmpty ? "Something fun" : event.activity.localizedCapitalized)
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.white)
+                    .lineLimit(2)
+
+                HStack(spacing: 5) {
+                    Image(systemName: "calendar")
+                    Text(scheduledDateText(for: event))
+                }
+                .font(.system(size: 13, weight: .medium))
+                .foregroundColor(.white.opacity(0.72))
+            }
+
+            Spacer(minLength: 8)
+
+            Image(systemName: "chevron.right")
+                .font(.system(size: 13, weight: .bold))
+                .foregroundColor(.white.opacity(0.55))
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(Rectangle())
+    }
+
+    private func scheduledDateText(for event: DetailedEvent) -> String {
+        let scheduledDays = event.selectedDays.isEmpty
+            ? "Any day"
+            : event.selectedDays.joined(separator: ", ")
+        let scheduledTime = event.time.formatted(date: .omitted, time: .shortened)
+        return "\(scheduledDays) · \(scheduledTime)"
+    }
+
     private var signOutButton: some View {
         Button(action: {
             Task {
@@ -619,22 +655,6 @@ struct ProfileView: View {
         }
     }
     
-    // Reusable view for the mini event pills in the horizontal scroll views
-    private func miniEventCard(for event: DetailedEvent) -> some View {
-        HStack(spacing: 8) {
-            Text(event.activity.isEmpty ? "Something fun" : event.activity)
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundColor(.white)
-            
-            Image(systemName: "chevron.right")
-                .font(.system(size: 12, weight: .bold))
-                .foregroundColor(.white.opacity(0.7))
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
-        .background(Color.black.opacity(0.3))
-        .clipShape(Capsule())
-    }
 }
 
 
