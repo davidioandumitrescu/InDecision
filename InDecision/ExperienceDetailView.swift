@@ -8,6 +8,8 @@
 import SwiftUI
 
 struct ExperienceDetailView: View {
+    
+    @EnvironmentObject var voiceManager: VoiceManager
 
     let event: DetailedEvent
     
@@ -323,6 +325,7 @@ struct ExperienceDetailView: View {
                 Task {
                     await eventManager.toggleJoin(for: event.id, userID: authManager.userID)
                     await refreshAttendees()
+                    voiceManager.playSessionSound()
                 }
             }) {
                 HStack {
