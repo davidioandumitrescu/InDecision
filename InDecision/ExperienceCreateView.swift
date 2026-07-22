@@ -1740,7 +1740,7 @@ struct ExperienceCreateView: View {
                 \(Text("\(safeTarget) ").foregroundColor(accentCyan))\
                 \(Text("to \ngo ").foregroundColor(.white))\
                 \(Text("\(safeActivity) ").foregroundColor(.green))\
-                \(Text("with ").foregroundColor(.white))\
+                \(Text("on ").foregroundColor(.white))\
                 \(styledDaysText)
                 """)
         }
