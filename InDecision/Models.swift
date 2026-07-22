@@ -108,6 +108,16 @@ struct DetailedEvent: Identifiable, Codable {
         formatter.dateFormat = "h:mm a"
 
         return formatter.string(from: time)
+
+//     private var formattedDaysString: String {
+//         if selectedDays.isEmpty { return "any day!" }
+//         if selectedDays.count == 1 { return selectedDays[0] }
+//         if selectedDays.count == 2 { return "\(selectedDays[0]) or \(selectedDays[1])" }
+//         if selectedDays.count > 6 {return "any day!"}
+        
+//         let allButLast = selectedDays.dropLast().joined(separator: ", ")
+//         return "\(allButLast), or \(selectedDays.last!)"
+
     }
     
     var stylizedPreview: Text {

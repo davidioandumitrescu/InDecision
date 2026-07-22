@@ -8,6 +8,8 @@
 import SwiftUI
 
 struct ExperienceDetailView: View {
+    
+    @EnvironmentObject var voiceManager: VoiceManager
 
     let event: DetailedEvent
     
@@ -78,11 +80,20 @@ struct ExperienceDetailView: View {
                         
                         // Invisible spacer so the header doesn't cover your text
                         Spacer().frame(height: 60)
-                         
-                        Text("\(Int(currentEvent.maxPeople) - currentEvent.joinedCount) more people to reach goal!")
-                            .font(.system(size: 18, weight: .bold))
-                            .foregroundColor(.black.opacity(0.6))
-                            .padding(.top, 10)
+                        
+                        var goal = Int(currentEvent.maxPeople) - currentEvent.joinedCount
+                        if (goal > 0) {
+                            Text("\(goal) more people to reach goal!")
+                                .font(.system(size: 18, weight: .bold))
+                                .foregroundColor(.black.opacity(0.6))
+                                .padding(.top, 10)
+                        } else {
+                            Text("Event filled!")
+                                .font(.system(size: 18, weight: .bold))
+                                .foregroundColor(.black.opacity(0.6))
+                                .padding(.top, 10)
+                        }
+                        
                          
                         event.stylizedPreview
                             .font(.system(size: 32, weight: .bold))
@@ -306,26 +317,33 @@ struct ExperienceDetailView: View {
     
     private var actionButtonsArea: some View {
         VStack(spacing: 12) {
+            // ----- Join Button -----
+            let isFull = currentEvent.joinedCount >= Int(currentEvent.maxPeople)
+            let joinDisabled = isFull && !isJoined
+
             Button(action: {
                 Task {
                     await eventManager.toggleJoin(for: event.id, userID: authManager.userID)
                     await refreshAttendees()
+                    voiceManager.playSessionSound()
                 }
             }) {
                 HStack {
                     Image(systemName: isJoined ? "checkmark.circle.fill" : "checkmark.circle")
-                    Text(isJoined ? "You are going" : "Yes, I'm in!")
+                    Text(joinDisabled ? "Event is full" : (isJoined ? "You are going" : "Yes, I'm in!"))
                 }
                 .font(.title3)
                 .fontWeight(.semibold)
-                .foregroundColor(isJoined ? buttonPurple : .white)
+                .foregroundColor(joinDisabled ? .gray : (isJoined ? buttonPurple : .white))
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 20)
-                .background(isJoined ? Color.white : buttonPurple)
+                .background(joinDisabled ? Color.gray.opacity(0.4) : (isJoined ? Color.white : buttonPurple))
                 .clipShape(Capsule())
-                .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
+                .shadow(color: joinDisabled ? .clear : .black.opacity(0.1), radius: 5, x: 0, y: 2)
             }
-            
+            .disabled(joinDisabled)
+
+            // ----- Save Button (unchanged) -----
             Button(action: {
                 Task {
                     await eventManager.toggleSave(for: event.id, userID: authManager.userID)

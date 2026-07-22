@@ -9,6 +9,8 @@ import Combine
 import Foundation
 import Supabase
 import SwiftUI
+import UIKit
+
 
 @MainActor
 class EventManager: ObservableObject {
@@ -141,6 +143,11 @@ class EventManager: ObservableObject {
     func toggleSave(for eventId: UUID, userID: UUID?) async {
         guard let userID else {
             errorMessage = "You need to sign in before saving events."
+
+            await MainActor.run {
+                UINotificationFeedbackGenerator().notificationOccurred(.error)
+            }
+
             return
         }
 
@@ -149,8 +156,11 @@ class EventManager: ObservableObject {
         } else {
             await saveEvent(eventId, userID: userID)
         }
-    }
 
+        await MainActor.run {
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        }
+    }
     func clearSavedEvents() {
         savedEventIDs = []
     }
@@ -168,8 +178,10 @@ class EventManager: ObservableObject {
                 .insert(savedEvent)
                 .execute()
 
-            errorMessage = ""
-            
+            // ✅ Insert the ID into the local set so the UI refreshes
+            savedEventIDs.insert(eventId)
+
+            // Update local event's likeCount
             if let index = events.firstIndex(where: { $0.id == eventId }) {
                 events[index].likeCount += 1
                 try await SupabaseManager.shared.client
@@ -178,6 +190,8 @@ class EventManager: ObservableObject {
                     .eq("id", value: eventId.uuidString)
                     .execute()
             }
+
+            errorMessage = ""
         } catch {
             errorMessage = error.localizedDescription
             print("❌ Failed to save event:", error)
@@ -234,9 +248,13 @@ class EventManager: ObservableObject {
             }
         }
 
+
         func toggleJoin(for eventId: UUID, userID: UUID?) async {
             guard let userID else {
                 errorMessage = "You need to sign in before joining events."
+                await MainActor.run {
+                    UINotificationFeedbackGenerator().notificationOccurred(.error)
+                }
                 return
             }
 
@@ -244,6 +262,10 @@ class EventManager: ObservableObject {
                 await leaveEvent(eventId, userID: userID)
             } else {
                 await joinEvent(eventId, userID: userID)
+            }
+
+            await MainActor.run {
+                UINotificationFeedbackGenerator().notificationOccurred(.success)
             }
         }
         
@@ -261,6 +283,7 @@ class EventManager: ObservableObject {
                     .execute()
 
                 joinedEventIDs.insert(eventId)
+                
                 
                 
                 
