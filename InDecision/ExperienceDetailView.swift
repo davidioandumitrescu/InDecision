@@ -8,161 +8,249 @@
 import SwiftUI
 
 struct ExperienceDetailView: View {
+    
+    @EnvironmentObject var voiceManager: VoiceManager
+
     let event: DetailedEvent
+    
+    // Dependencies
     @EnvironmentObject var eventManager: EventManager
+    @EnvironmentObject var authManager: AuthManager
     @Environment(\.dismiss) var dismiss
     
-    //UI background layer
-    private let themeGreen = Color(red: 0.0, green: 0.8, blue: 0.65)
+    @State private var showDeleteAlert = false
+    @State private var showEditSheet = false
+    
+    // UI State
+    @State private var attendees: [Profile] = []
+    @State private var isLoadingAttendees: Bool = true
+    
+    // Card Pop-up State
+    @State private var selectedCardInfo: AttendeeCardInfo?
+    
+    // Colors passed from list view
+    var bgColor: Color
+    var nextColor: Color
+    
+    // Theme Constants
     private let buttonPurple = Color(red: 0.45, green: 0.35, blue: 0.95)
     
+    var isJoined: Bool {
+        eventManager.joinedEventIDs.contains(event.id)
+    }
+    var isSaved: Bool {
+        eventManager.savedEventIDs.contains(event.id)
+    }
+    
+    var currentEvent: DetailedEvent {
+        eventManager.events.first(where: { $0.id == event.id }) ?? event
+    }
+    
+    var sortedAttendees: [Profile] {
+        attendees.sorted { (user1, user2) in
+            // If user1 is the host, they go first
+            if user1.id == currentEvent.created_by { return true }
+            // If user2 is the host, they go first
+            if user2.id == currentEvent.created_by { return false }
+            // Otherwise, sort alphabetically
+            return (user1.full_name ?? user1.username) < (user2.full_name ?? user2.username)
+        }
+    }
+    
     var body: some View {
-        
-        ZStack{
-            themeGreen
-                .ignoresSafeArea()
-            
-            //1. right bottom green geometric boxes
-            VStack{
-                Spacer()
-                HStack{
+            ZStack(alignment: .top) {
+                // 1. Background Layers
+                bgColor.ignoresSafeArea()
+                 
+                VStack {
                     Spacer()
-                    VStack(alignment: .trailing, spacing: 0) {
-                            Color.green.opacity(0.3).frame(width: 150, height: 100)
-                            Color.green.opacity(0.4).frame(width: 250, height: 100)
+                    HStack {
+                        Spacer()
+                        VStack(alignment: .trailing, spacing: 0) {
+                            nextColor.frame(width: 125, height: 60)
+                            nextColor.frame(width: 250, height: 60)
+                        }
                     }
                 }
-            }
-            .ignoresSafeArea()
-            
-            //2. core content layer
-            VStack(alignment: .leading, spacing: 24) {
-                headerBar // defined later
-                let numMore = event.maxPeople - event.joinedCount
-                
-                ScrollView(.vertical, showsIndicators: false){
-                    VStack(alignment: .leading, spacing: 22){
-                       
-                        Text("\(numMore) more people to reach goal!")  // need to obtain data from the database
-                            .font(.system(size: 18, weight: .bold))
-                            .fontWeight(.medium)
-                            .foregroundColor(.black.opacity(0.6))
-                            .padding(.top, 10)
+                .ignoresSafeArea(edges: .bottom)
+                 
+                // 2. Core Content Layer (ScrollView with top padding)
+                ScrollView(.vertical, showsIndicators: false) {
+                    VStack(alignment: .leading, spacing: 22) {
                         
-                        Text("\(event.hostName) wants \(Int(event.maxPeople)) adventurers to go \(event.activity)")
+                        // Invisible spacer so the header doesn't cover your text
+                        Spacer().frame(height: 60)
+                        
+                        var goal = Int(currentEvent.maxPeople) - currentEvent.joinedCount
+                        if (goal > 0) {
+                            Text("\(goal) more people to reach goal!")
+                                .font(.system(size: 18, weight: .bold))
+                                .foregroundColor(.black.opacity(0.6))
+                                .padding(.top, 10)
+                        } else {
+                            Text("Event filled!")
+                                .font(.system(size: 18, weight: .bold))
+                                .foregroundColor(.black.opacity(0.6))
+                                .padding(.top, 10)
+                        }
+                        
+                         
+                        event.stylizedPreview
                             .font(.system(size: 32, weight: .bold))
                             .foregroundColor(.white)
                             .lineSpacing(6)
-                        
+                         
                         tagsSection
-                        
                         infoRowsSection
-                        
                         socialStatsBar
-                        
                         attendeesAvatersSection
-                        
+                         
                         Spacer(minLength: 40)
-                        
                         actionButtonsArea
                     }
+                    .padding(.horizontal, 24)
                 }
-                
-                
-                
+                  
+                // 3. Pinned Header Bar at the very top of the ZStack
+                headerBar
+                    .padding(.horizontal, 24)
+                    .padding(.top, 8)
+                    .zIndex(10)
             }
-            .padding(.horizontal, 24)
+            .toolbar(.hidden, for: .navigationBar)
+            .sheet(item: $selectedCardInfo) { info in
+                ProfileCardSheet(info: info)
+                    .presentationDetents([.height(380)])
+                    .presentationDragIndicator(.visible)
+            }
+            .sheet(isPresented: $showEditSheet) {
+                ExperienceEditView(event: currentEvent)
+            }
+            .task {
+                attendees = await eventManager.getAttendees(for: currentEvent.id)
+                isLoadingAttendees = false
+            }
         }
-        .toolbar(.hidden, for: .navigationBar)
-    }
     
-    // MARK: - subsections:
-    //a. headerbar
+    // MARK: - Subsections
+    
     private var headerBar: some View {
-        HStack{
-            HStack(spacing:8){
-                Image(systemName:"person.3.fill")
-                    .font(.system(size:35))
-                    .foregroundColor(.white)
-                Text("Bloop")
-                    .font(.system(size:30, weight:.bold))
-                    .foregroundColor(.white)
+        HStack {
+            Button(action: {
+                dismiss() // This safely takes you back to the list!
+            }) {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundColor(.black)
+                    .frame(width: 44, height: 44)
+                    .background(Color.white.opacity(0.9))
+                    .clipShape(Circle())
+                    .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
             }
             
             Spacer()
             
-            Button(action: {dismiss()}) {
-                Image(systemName: "person.crop.circle.fill")
-                    .font(.system(size:50))
-                    .foregroundColor(.white)
+            if authManager.userID == currentEvent.created_by {
+                HStack(spacing: 16) {
+                    // Edit Button (Pen Icon)
+                    Button(action: {
+                        showEditSheet = true
+                    }) {
+                        Image(systemName: "pencil.circle.fill")
+                            .font(.system(size: 34))
+                            .foregroundColor(.white)
+                    }
+                    
+                    // Delete Button (Trash Icon)
+                    Button(action: {
+                        showDeleteAlert = true
+                    }) {
+                        Image(systemName: "trash.circle.fill")
+                            .font(.system(size: 34))
+                            .foregroundColor(.white.opacity(0.9))
+                    }
+                }
             }
-                
-        }
-        .padding(.top,10)
-    }
-    
-    //b.tagsSection
-    private var tagsSection: some View {
-        HStack (spacing:10){
-            Text(event.experienceType)
-                .font(.system(size:20, weight:.bold))
-                .fontWeight(.semibold)
-                .padding(.horizontal, 14)
-                .padding(.vertical,8)
-                .background(Color.black.opacity(0.15))
-                .foregroundColor(.white)
-                .clipShape(Capsule())
             
-            Text("Adventure") // later link to tags attribute of event
-                .font(.system(size:20, weight:.bold))
-                .fontWeight(.semibold)
-                .padding(.horizontal, 14)
-                .padding(.vertical,8)
-                .background(Color.black.opacity(0.15))
-                .foregroundColor(.white)
-                .clipShape(Capsule())
+            // 2. The Profile Button
+            NavigationLink(destination: ProfileDestinationView()) {
+                AvatarView(userID: authManager.userID)
+            }
         }
-        .padding()
+        .padding(.top, 10)
+        .alert("Delete Event", isPresented: $showDeleteAlert) {
+            Button("Cancel", role: .cancel) { }
+            Button("Delete", role: .destructive) {
+                Task {
+                    await eventManager.deleteEvent(eventID: currentEvent.id)
+                    dismiss()
+                }
+            }
+        } message: {
+            Text("Are you sure you want to delete this event? This action cannot be undone.")
+        }
     }
     
-    //c. location & time row
+    private var tagsSection: some View {
+        HStack(spacing: 10) {
+            Text(event.isSolid ? "Solid" : "Proposed")
+                .font(.subheadline)
+                .fontWeight(.bold)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(event.isSolid ? Color.white.opacity(0.4) : Color.black.opacity(0.3))
+                .clipShape(Capsule())
+                .foregroundColor(.white)
+            
+            Text(event.experienceType)
+                .font(.subheadline)
+                .fontWeight(.bold)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(Color.black.opacity(0.3))
+                .clipShape(Capsule())
+                .foregroundColor(.white)
+            
+        }
+        .padding(.top)
+    }
+    
     private var infoRowsSection: some View {
-        VStack(alignment:.leading, spacing:14) {
-            HStack(spacing:10){
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(spacing: 10) {
                 Image(systemName: "location.north.circle.fill")
                     .font(.system(size: 20))
                     .foregroundColor(.white.opacity(0.8))
-                Text(event.location)
+                Text(event.location.isEmpty ? "Location undecided yet" : event.location)
                     .font(.system(size: 18))
                     .foregroundColor(.black.opacity(0.7))
             }
-            HStack(spacing:10){
+            HStack(spacing: 10) {
                 Image(systemName: "clock.fill")
                     .font(.system(size: 20))
                     .foregroundColor(.white.opacity(0.8))
-                Text("\(event.time)") // no date for event.
+                Text(event.time.formatted(date: .omitted, time: .shortened))
                     .font(.system(size: 18))
                     .foregroundColor(.black.opacity(0.7))
             }
         }
         .fontWeight(.medium)
     }
-        
-    //d. likes counts and data
+    
     private var socialStatsBar: some View {
-        HStack(spacing:16){
-            HStack(spacing:6){
+        HStack(spacing: 16) {
+            HStack(spacing: 6) {
                 Image(systemName: "heart.circle")
                     .foregroundColor(.pink.opacity(0.7))
                     .font(.system(size: 24, weight: .bold))
-                Text("\(event.likeCount)") //later to pass the event saved data
+                Text("\(currentEvent.likeCount)")
                     .foregroundColor(.black.opacity(0.7))
             }
-            HStack(spacing:6){
+            HStack(spacing: 6) {
                 Image(systemName: "checkmark.circle.fill")
                     .font(.system(size: 24, weight: .bold))
                     .foregroundColor(.black.opacity(0.7))
-                Text("\(event.joinedCount)") //later to pass the event saved data
+                Text("\(currentEvent.joinedCount)")
                     .foregroundColor(.black.opacity(0.7))
             }
         }
@@ -170,124 +258,216 @@ struct ExperienceDetailView: View {
         .fontWeight(.bold)
     }
     
-    //e. user avatar banner. dummy data to be replaced by superbase. there are conflicts. so i use dummies now.
-    private var dummyUsers: [Profile] {
-            [
-                Profile(id: UUID(uuidString: "abc123e4-be33-40ef-a417-e5166e307b5e")!, username: "j", full_name: "Jacob Gellard", avatar_url: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?q=80&w=200"),
-                Profile(id: UUID(uuidString: "cd5b0a98-957e-42f0-8311-8224df346b59")!, username: "davidioan", full_name: "David Dumitrescu", avatar_url: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=200"),
-                Profile(id: UUID(), username: "lisa", full_name: "Lisa Li", avatar_url: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=200"),
-            ]
-        }
-    
     private var attendeesAvatersSection: some View {
-        HStack(spacing:10){
-            ForEach(dummyUsers){user in
-                let isHost = user.id == event.created_by
-                
-                ZStack(alignment:.trailing){
-                    //1) image
-                    if let avatarStr = user.avatar_url, let url = URL(string: avatarStr){
-                        AsyncImage(url: url){image in
-                            image
-                                .resizable()
-                                .scaledToFill()
-                        } placeholder: {
-                            Image(systemName:  "person.crop.circle.fill")
-                                .resizable()
-                                .foregroundColor(Color.gray.opacity(0.4))
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Who's going?")
+                .font(.subheadline.bold())
+                .foregroundColor(.white.opacity(0.8))
+            
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 16) {
+                    if isLoadingAttendees {
+                        ProgressView().tint(.white)
+                            .padding(.leading, 20)
+                    } else {
+                        // Loop through our sorted real data!
+                        ForEach(sortedAttendees, id: \.id) { user in
+                            let isHost = user.id == currentEvent.created_by
+                            
+                            Button(action: {
+                                selectedCardInfo = AttendeeCardInfo(
+                                    id: user.id,
+                                    name: user.full_name ?? user.username,
+                                    email: "No email provided",     // Placeholder
+                                    hostedCount: isHost ? 5 : 1,   // Placeholder
+                                    interests: user.interests ?? [],
+                                    isHost: isHost
+                                )
+                            }) {
+                                VStack(spacing: 6) {
+                                    ZStack(alignment: .bottomTrailing) {
+                                        // The Gray Circle Placeholder
+                                        AvatarView(userID: user.id, size: 60)
+                                        
+                                        // Verified Badge for Host
+                                        if isHost {
+                                            Image(systemName: "checkmark.seal.fill")
+                                                .font(.system(size: 16))
+                                                .foregroundColor(.blue)
+                                                .background(Color.white)
+                                                .clipShape(Circle())
+                                                .offset(x: 2, y: 2)
+                                        }
+                                    }
+                                    
+                                    // Name underneath
+                                    Text(user.full_name ?? user.username)
+                                        .font(.system(size: 12, weight: .medium))
+                                        .foregroundColor(.white)
+                                        .lineLimit(1)
+                                        .frame(width: 64)
+                                }
+                            }
                         }
-                        .frame(width: 54, height: 54)
-                        .clipShape(Circle())
-                        // 2) host: purple outline
-                        .overlay(
-                            Circle()
-                                .stroke(isHost ? Color(red: 0.45, green:0.35, blue:0.95) : .gray.opacity(0.6), lineWidth: 3)
-                        )
-                    }
-                    if isHost{
-                        Image(systemName:"checkmark.seal.fill")
-                            .resizable( )
-                            .frame(width: 20, height: 20)
-                            .foregroundColor(.blue)
-                            .background(Circle().fill(.white).frame(width: 18, height: 18))
-                            .offset(x: 4, y:-20)
-                        
                     }
                 }
             }
         }
     }
     
+    private var actionButtonsArea: some View {
+        VStack(spacing: 12) {
+            // ----- Join Button -----
+            let isFull = currentEvent.joinedCount >= Int(currentEvent.maxPeople)
+            let joinDisabled = isFull && !isJoined
 
-    private func avatarImage(sysName:String, strokeColor:Color)-> some View {
-        Image(systemName: sysName)
-            .resizable()
-            .scaledToFill()
-            .frame(width: 54, height: 54)
-            .background(.white)
-            .clipShape(Circle())
-            .overlay(Circle().stroke(style: StrokeStyle(lineWidth: 3)).foregroundColor(strokeColor))
-        
-    }
-    
-    // f. add the buttons to join and save
-    private var actionButtonsArea: some View{
-        VStack(spacing:12){
-            Button(action:{print("Join Event: \(event.id)")
-            }){
-                //                HStack{
-                //                    Image(systemName:"checkmark.circle")
-                //                    Text("Yes, I'm in!")
-                //                        .fontWeight(.bold)
-                //                }
-                Label("Yes, I'm in!", systemImage: "checkmark.circle")
-                    .font(Font.body.bold())
-                    .background(buttonPurple.frame(width: 200, height: 54).cornerRadius(10))
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .frame(height:54)
-                    .clipShape(Capsule())
-                    .shadow(color:buttonPurple.opacity(0.9), radius: 8, x:0, y:4)
+            Button(action: {
+                Task {
+                    await eventManager.toggleJoin(for: event.id, userID: authManager.userID)
+                    await refreshAttendees()
+                    voiceManager.playSessionSound()
+                }
+            }) {
+                HStack {
+                    Image(systemName: isJoined ? "checkmark.circle.fill" : "checkmark.circle")
+                    Text(joinDisabled ? "Event is full" : (isJoined ? "You are going" : "Yes, I'm in!"))
+                }
+                .font(.title3)
+                .fontWeight(.semibold)
+                .foregroundColor(joinDisabled ? .gray : (isJoined ? buttonPurple : .white))
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 20)
+                .background(joinDisabled ? Color.gray.opacity(0.4) : (isJoined ? Color.white : buttonPurple))
+                .clipShape(Capsule())
+                .shadow(color: joinDisabled ? .clear : .black.opacity(0.1), radius: 5, x: 0, y: 2)
             }
-            Button(action:{
-                eventManager.toggleSave(for: event.id)
-            }){
-                Label("Save for later", systemImage: "heart.fill")
+            .disabled(joinDisabled)
+
+            // ----- Save Button (unchanged) -----
+            Button(action: {
+                Task {
+                    await eventManager.toggleSave(for: event.id, userID: authManager.userID)
+                }
+            }) {
+                Label(isSaved ? "Saved" : "Save for later", systemImage: isSaved ? "heart.fill" : "heart")
                     .font(Font.body.bold())
-                    .foregroundColor(buttonPurple)
+                    .foregroundColor(isSaved ? .white : buttonPurple)
                     .frame(maxWidth: .infinity)
-                    .frame(height:54)
+                    .frame(height: 54)
+                    .background(isSaved ? .pink.opacity(0.8) : Color.white)
                     .clipShape(Capsule())
-                    .shadow(color:buttonPurple.opacity(0.9), radius: 8, x:0, y:4)
+                    .shadow(color: buttonPurple.opacity(0.3), radius: 8, x: 0, y: 4)
             }
             .padding(.bottom, 50)
         }
     }
+    
+    // MARK: - Helpers
+    
+    private func refreshAttendees() async {
+        isLoadingAttendees = true
+        attendees = await eventManager.getAttendees(for: currentEvent.id)
+        isLoadingAttendees = false
+    }
 }
-    
-    
 
-#Preview {
-    let previewTime = Date()
+// MARK: - Popup Card Data & View
+
+struct AttendeeCardInfo: Identifiable {
+    let id: UUID
+    let name: String
+    let email: String
+    let hostedCount: Int
+    let interests: [String]
+    let isHost: Bool
+}
+
+struct ProfileCardSheet: View {
+    let info: AttendeeCardInfo
     
-    ExperienceDetailView(
-        event: DetailedEvent(
-            id: UUID(uuidString: "54514bd0-c8b5-4268-8038-db8e07a2efce")!,
-            hostName: "Dan",
-            location: "Nollamara, Perth Western Australia",
-            experienceType: "Sport",
-            created_by: UUID(uuidString: "abc123e4-be33-40ef-a417-e5166e307b5e"),
-            activity: "rock climbing",
-            connectionTarget: "adventurers",
-            minPeople: 5,
-            maxPeople: 8,
-            selectedDays: ["Mondays", "Tuesdays"],
-            time: previewTime,                     
-            imgUrl: "",
-            isSolid: false,
-            likeCount: 34,
-            joinedCount: 3
-        )
-    )
-    .environmentObject(EventManager())
+    // Theme Colors
+    private let bgTeal = Color.mint
+    private let btnPurple = Color(red: 0.50, green: 0.35, blue: 0.96)
+    
+    var body: some View {
+        VStack(spacing: 20) {
+            // Header Image
+            ZStack(alignment: .bottomTrailing) {
+                AvatarView(userID: info.id, size: 80)
+                
+                if info.isHost {
+                    Image(systemName: "checkmark.seal.fill")
+                        .font(.system(size: 24))
+                        .foregroundColor(.white)
+                        .background(btnPurple)
+                        .clipShape(Circle())
+                        .offset(x: 5, y: 5)
+                }
+            }
+            .padding(.top, 30)
+            
+            // Name & Role
+            VStack(spacing: 4) {
+                Text(info.name)
+                    .font(.title2.bold())
+                    .foregroundColor(.white)
+                
+                Text(info.isHost ? "Event Host" : "Attendee")
+                    .font(.subheadline.bold())
+                    .foregroundColor(.white.opacity(0.8))
+            }
+            
+            Divider().background(Color.white.opacity(0.3)).padding(.horizontal)
+            
+            // Stats & Contact
+            VStack(alignment: .leading, spacing: 16) {
+                HStack(spacing: 12) {
+                    Image(systemName: "envelope.fill")
+                        .foregroundColor(.white)
+                        .frame(width: 24)
+                    Text(info.email)
+                        .font(.body)
+                        .foregroundColor(.white)
+                }
+                
+                HStack(spacing: 12) {
+                    Image(systemName: "calendar.badge.plus")
+                        .foregroundColor(.white)
+                        .frame(width: 24)
+                    Text("\(info.hostedCount) Events Hosted")
+                        .font(.body)
+                        .foregroundColor(.white)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 30)
+            
+            // Interests Tags
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Interests")
+                    .font(.caption.bold())
+                    .foregroundColor(.white.opacity(0.8))
+                
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(info.interests, id: \.self) { interest in
+                            Text(interest)
+                                .font(.caption.bold())
+                                .foregroundColor(btnPurple)
+                                .fixedSize()
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 8)
+                                .background(Color.white)
+                                .clipShape(Capsule())
+                        }
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 30)
+            
+            Spacer()
+        }
+        .background(bgTeal.ignoresSafeArea())
+    }
 }

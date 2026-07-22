@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import UIKit   // for haptic feedback
 
 // MARK: - 1. THE REVERSED STAGGERED SHAPE
 struct StaggeredBottomShape: Shape {
@@ -16,65 +17,76 @@ struct StaggeredBottomShape: Shape {
         var path = Path()
         let stepWidth = rect.width / CGFloat(steps)
         
-        // 1. Start top-left
         path.move(to: CGPoint(x: 0, y: 0))
-        // 2. Line to top-right
         path.addLine(to: CGPoint(x: rect.width, y: 0))
         
-        // 3. Line down the right side
         let highestPointOnRight = rect.height - (CGFloat(steps - 1) * stepHeight)
         path.addLine(to: CGPoint(x: rect.width, y: highestPointOnRight))
         
-        // 4. Draw the steps going backwards from right to left, dropping DOWN
         for i in (0..<steps).reversed() {
             let currentX = CGFloat(i) * stepWidth
             let currentY = rect.height - (CGFloat(i) * stepHeight)
-            
-            // Horizontal line going left
             path.addLine(to: CGPoint(x: currentX, y: currentY))
-            
-            // Vertical line going down
             if i != 0 {
                 let nextStepDownY = rect.height - (CGFloat(i - 1) * stepHeight)
                 path.addLine(to: CGPoint(x: currentX, y: nextStepDownY))
             }
         }
-        
-        // 5. Close the path up the left side
         path.closeSubpath()
         return path
     }
 }
 
-// MARK: - 2. THE CARD VIEW
+// MARK: - 2. CARD VIEW
 struct StaggeredEventCard: View {
+    @EnvironmentObject var eventManager: EventManager
+    @EnvironmentObject var authManager: AuthManager
+
     var event: DetailedEvent
     var bgColor: Color
+    var nextColor: Color
     
     var stepHeight: CGFloat = 30
     var steps: Int = 3
     var isFirstItem: Bool = false
     
+    @State private var likeAnimationActive = false
+    
     var body: some View {
         let overlapAmount = stepHeight * CGFloat(steps - 1)
         let remainingPeople = max(0, Int(event.maxPeople) - event.joinedCount)
+        let shape = StaggeredBottomShape(steps: steps, stepHeight: stepHeight)
         
         VStack(alignment: .leading, spacing: 16) {
-            Text("\(remainingPeople) more people to reach goal!")
-                .font(.subheadline)
-                .fontWeight(.semibold)
+            if (remainingPeople > 0){
+                Text("\(remainingPeople) more people to reach goal!")
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                .foregroundColor(.white.opacity(0.8))}
+            else{
+                Text("Event filled!")
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
                 .foregroundColor(.white.opacity(0.8))
-            NavigationLink(destination: ExperienceDetailView(event: event)) {
+            }
+            
+            NavigationLink(destination: ExperienceDetailView(event: event, bgColor: bgColor, nextColor: nextColor)) {
                 Text(event.generatedTitle)
                     .font(.title2)
                     .bold()
                     .foregroundColor(.white)
                     .lineSpacing(4)
+                    .onTapGesture(count: 2) {
+                        Task { await eventManager.toggleSave(for: event.id, userID: authManager.userID) }
+                        withAnimation { likeAnimationActive = true }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                            likeAnimationActive = false
+                        }
+                    }
             }
             .buttonStyle(PlainButtonStyle())
-            // Tags and Icons row
+            
             HStack(spacing: 12) {
-                // Proposed / Solid Tag
                 Text(event.isSolid ? "Solid" : "Proposed")
                     .font(.subheadline)
                     .fontWeight(.bold)
@@ -111,36 +123,195 @@ struct StaggeredEventCard: View {
         .padding(.bottom, 60 + overlapAmount)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(bgColor)
-        .clipShape(StaggeredBottomShape(steps: steps, stepHeight: stepHeight))
+        .overlay(
+            Group {
+                if likeAnimationActive {
+                    Rectangle()
+                        .fill(Color.white.opacity(0.25))
+                        .blur(radius: 8)
+                        .scaleEffect(1.02)
+                        .transition(.opacity)
+                        .animation(.easeOut(duration: 0.3), value: likeAnimationActive)
+                    
+                    ShineView(shape: shape)
+                }
+            }
+        )
+        .clipShape(shape)
+        // 👇 HAPTIC SUPPORT: report the card's vertical center in global coordinates
+        .background(
+            GeometryReader { geo in
+                Color.clear
+                    .preference(
+                        key: CardMidYKey.self,
+                        value: [event.id.uuidString: geo.frame(in: .global).midY]   // ✅ use uuidString
+                    )
+            }
+        )
     }
 }
 
-// MARK: - 3. THE MAIN LIST
+// MARK: - SHINE VIEW
+struct ShineView: View {
+    let shape: StaggeredBottomShape
+    
+    @State private var offsetX: CGFloat = -1.0
+    
+    var body: some View {
+        GeometryReader { geometry in
+            Rectangle()
+                .fill(
+                    LinearGradient(
+                        gradient: Gradient(stops: [
+                            .init(color: .clear, location: 0),
+                            .init(color: .white.opacity(0.6), location: 0.3),
+                            .init(color: .white.opacity(0.9), location: 0.5),
+                            .init(color: .white.opacity(0.6), location: 0.7),
+                            .init(color: .clear, location: 1)
+                        ]),
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
+                .mask(shape)
+                .offset(x: offsetX * geometry.size.width * 1.2)
+                .onAppear {
+                    withAnimation(.easeInOut(duration: 0.7)) {
+                        offsetX = 1.0
+                    }
+                }
+        }
+    }
+}
+
+// MARK: - FILTER LAYOUT
+private struct FilterBubbleLayout: Layout {
+    let horizontalSpacing: CGFloat
+    let verticalSpacing: CGFloat
+
+    func sizeThatFits(
+        proposal: ProposedViewSize,
+        subviews: Subviews,
+        cache: inout ()
+    ) -> CGSize {
+        let rows = makeRows(maxWidth: proposal.width ?? .infinity, subviews: subviews)
+        let contentWidth = rows.map(\.width).max() ?? 0
+        let contentHeight = rows.reduce(0) { $0 + $1.height }
+            + verticalSpacing * CGFloat(max(rows.count - 1, 0))
+
+        return CGSize(width: proposal.width ?? contentWidth, height: contentHeight)
+    }
+
+    func placeSubviews(
+        in bounds: CGRect,
+        proposal: ProposedViewSize,
+        subviews: Subviews,
+        cache: inout ()
+    ) {
+        let rows = makeRows(maxWidth: bounds.width, subviews: subviews)
+        var y = bounds.minY
+
+        for row in rows {
+            var x = bounds.minX
+
+            for item in row.items {
+                item.subview.place(
+                    at: CGPoint(x: x, y: y + (row.height - item.size.height) / 2),
+                    anchor: .topLeading,
+                    proposal: ProposedViewSize(item.size)
+                )
+                x += item.size.width + horizontalSpacing
+            }
+
+            y += row.height + verticalSpacing
+        }
+    }
+
+    private func makeRows(maxWidth: CGFloat, subviews: Subviews) -> [Row] {
+        var rows: [Row] = []
+        var currentRow = Row()
+
+        for subview in subviews {
+            let size = subview.sizeThatFits(.unspecified)
+            let requiredWidth = currentRow.items.isEmpty
+                ? size.width
+                : currentRow.width + horizontalSpacing + size.width
+
+            if !currentRow.items.isEmpty, requiredWidth > maxWidth {
+                rows.append(currentRow)
+                currentRow = Row()
+            }
+
+            currentRow.items.append(Item(subview: subview, size: size))
+            currentRow.width += (currentRow.items.count == 1 ? 0 : horizontalSpacing) + size.width
+            currentRow.height = max(currentRow.height, size.height)
+        }
+
+        if !currentRow.items.isEmpty {
+            rows.append(currentRow)
+        }
+
+        return rows
+    }
+
+    private struct Item {
+        let subview: LayoutSubview
+        let size: CGSize
+    }
+
+    private struct Row {
+        var items: [Item] = []
+        var width: CGFloat = 0
+        var height: CGFloat = 0
+    }
+}
+
+// MARK: - PREFERENCE KEYS
+struct CardMidYKey: PreferenceKey {
+    static var defaultValue: [String: CGFloat] = [:]
+    static func reduce(value: inout [String: CGFloat], nextValue: () -> [String: CGFloat]) {
+        value.merge(nextValue()) { $1 }
+    }
+}
+
+struct HeaderHeightKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = nextValue()
+    }
+}
+
+// MARK: - 3. MAIN LIST
 struct ExperienceListView: View {
     @EnvironmentObject var eventManager: EventManager
+    @EnvironmentObject var authManager: AuthManager
     
-    // MARK: - Filter States
     @State private var searchText = ""
     @State private var selectedFilter = 0
-    @State private var typeFilter: String = "All"
+    @State private var selectedTypes: Set<String> = []
     
     let experienceTypes = ["All", "Teach", "Demonstrate", "StoryTell", "Build", "Mentor", "Explore", "Discuss", "Practice"]
     
-    let palette: [Color] = [.teal, .green, .yellow, .orange]
+    let palette: [Color] = [.mint, .green, .yellow, .orange]
     let stepCount = 3
     let stepHeight: CGFloat = 30
-    
-    // MARK: - Filter Logic (Now uses eventManager.events!)
+
+    // MARK: - Haptic tracking
+    @State private var headerHeight: CGFloat = 0
+    @State private var triggeredCardIDs = Set<String>()
+    private let hapticTolerance: CGFloat = 20
+    private let hapticGenerator = UIImpactFeedbackGenerator(style: .light)
+
     var filterEvents: [DetailedEvent] {
         eventManager.events.filter { event in
-            let matchesSearch = searchText.isEmpty || event.activity.localizedCaseInsensitiveContains(searchText) || event.hostName.localizedCaseInsensitiveContains(searchText)
+            let matchesSearch = searchText.isEmpty || event.generatedTitle.localizedCaseInsensitiveContains(searchText) || event.hostName.localizedCaseInsensitiveContains(searchText)
             
             let matchesSegment: Bool
             if selectedFilter == 1 { matchesSegment = !event.isSolid }
             else if selectedFilter == 2 { matchesSegment = event.isSolid }
             else { matchesSegment = true }
             
-            let matchesType = (typeFilter == "All") || (event.experienceType == typeFilter)
+            let matchesType = selectedTypes.isEmpty || selectedTypes.contains(event.experienceType)
             
             return matchesSearch && matchesSegment && matchesType
         }
@@ -151,7 +322,7 @@ struct ExperienceListView: View {
             GeometryReader { geo in
                 ZStack(alignment: .top) {
                     
-                    // MARK: - THE BACKGROUND SCROLLING LIST
+                    // MARK: - SCROLLING LIST
                     ScrollView(.vertical, showsIndicators: false) {
                         let overlapAmount = stepHeight * CGFloat(stepCount - 1)
                         
@@ -159,8 +330,6 @@ struct ExperienceListView: View {
                             VStack(spacing: 16) {
                                 Text("No events match your search.")
                                     .foregroundColor(.gray)
-                                
-                                // Show a loading indicator if events are still fetching
                                 if eventManager.events.isEmpty && eventManager.errorMessage.isEmpty {
                                     ProgressView()
                                 }
@@ -173,6 +342,7 @@ struct ExperienceListView: View {
                                     StaggeredEventCard(
                                         event: event,
                                         bgColor: palette[index % palette.count],
+                                        nextColor: palette[(index + 1) % palette.count],
                                         stepHeight: stepHeight,
                                         steps: stepCount,
                                         isFirstItem: index == 0
@@ -182,9 +352,7 @@ struct ExperienceListView: View {
                             }
                             .padding(.bottom, overlapAmount)
                             
-                            // MARK: - BOTTOM SUGGESTION PROMPT
                             Button(action: {
-                                // Jumps to your Create Tab via EventManager!
                                 eventManager.selectedTab = 1
                             }) {
                                 Text("Can't find anything interesting?\n**Suggest something.**")
@@ -197,10 +365,10 @@ struct ExperienceListView: View {
                     .background(palette.first?.ignoresSafeArea())
                     .ignoresSafeArea(edges: .top)
                     
-                    // MARK: - THE FOREGROUND PINNED HEADER
+                    // MARK: - PINNED HEADER
                     VStack(spacing: 16) {
                         
-                        // 1. Search Bar & Profile Button
+                        // Search Bar & Profile Button
                         HStack(spacing: 12) {
                             HStack(spacing: 12) {
                                 Image(systemName: "magnifyingglass").foregroundColor(.gray).font(.system(size: 20))
@@ -213,16 +381,29 @@ struct ExperienceListView: View {
                             .clipShape(Capsule())
                             .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
                             
-                            // Filter Dropdown Button
                             Menu {
                                 ForEach(experienceTypes, id: \.self) { type in
-                                    Button(action: { typeFilter = type }) {
-                                        if typeFilter == type {
-                                            Label(type, systemImage: "checkmark")
-                                        } else {
-                                            Text(type)
-                                        }
-                                    }
+                                    Toggle(
+                                        type,
+                                        isOn: Binding(
+                                            get: {
+                                                type == "All"
+                                                    ? selectedTypes.isEmpty
+                                                    : selectedTypes.contains(type)
+                                            },
+                                            set: { isSelected in
+                                                if type == "All" {
+                                                    if isSelected {
+                                                        selectedTypes.removeAll()
+                                                    }
+                                                } else if isSelected {
+                                                    selectedTypes.insert(type)
+                                                } else {
+                                                    selectedTypes.remove(type)
+                                                }
+                                            }
+                                        )
+                                    )
                                 }
                             } label: {
                                 Image(systemName: "line.3.horizontal.decrease")
@@ -234,20 +415,13 @@ struct ExperienceListView: View {
                                     .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
                             }
                             
-                            // Profile Button
-                            NavigationLink(destination: ProfileView()) {
-                                Image(systemName: "person.crop.circle.fill")
-                                    .font(.system(size: 44))
-                                    .foregroundColor(.black)
-                                    .frame(width: 50, height: 50)
-                                    .background(Color.white.opacity(0.9))
-                                    .clipShape(Circle())
-                                    .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
+                            NavigationLink(destination: ProfileDestinationView()) {
+                                AvatarView(userID: authManager.userID)
                             }
                         }
                         .padding(.horizontal)
                         
-                        // 2. Segmented Control
+                        // Segmented Control
                         Picker("Filter", selection: $selectedFilter) {
                             Text("All").tag(0)
                             Text("Proposed").tag(1)
@@ -256,37 +430,112 @@ struct ExperienceListView: View {
                         .pickerStyle(.segmented)
                         .padding(.horizontal)
                         
-                        // 3. Active Filter Indicator
-                        if typeFilter != "All" {
-                            HStack {
-                                Text("Filtered by: **\(typeFilter)**")
-                                    .font(.caption)
-                                    .foregroundColor(.black)
-                                Spacer()
-                                Button(action: { typeFilter = "All" }) {
-                                    Image(systemName: "xmark.circle.fill")
-                                        .foregroundColor(.black.opacity(0.6))
+                        // Active Filter Indicator
+                        if !selectedTypes.isEmpty {
+                            FilterBubbleLayout(horizontalSpacing: 8, verticalSpacing: 8) {
+                                ForEach(experienceTypes.filter { selectedTypes.contains($0) }, id: \.self) { type in
+                                    Button {
+                                        selectedTypes.remove(type)
+                                    } label: {
+                                        HStack(spacing: 6) {
+                                            Text(type)
+                                            Image(systemName: "xmark")
+                                        }
+                                        .font(.caption.weight(.semibold))
+                                        .foregroundColor(.black.opacity(0.7))
+                                        .padding(.horizontal, 12)
+                                        .padding(.vertical, 7)
+                                        .background(Color.white.opacity(0.85))
+                                        .clipShape(Capsule())
+                                    }
+                                    .buttonStyle(.plain)
+                                    .accessibilityLabel("Remove \(type) filter")
                                 }
                             }
                             .padding(.horizontal)
                         }
                     }
+                    .padding(.horizontal)
                     .padding(.top, 8)
-                    .padding(.bottom, 12)
+                    .padding(.bottom, 24)
+                    .frame(maxWidth: .infinity)
+                    .background {
+                        Rectangle()
+                            .fill(.ultraThinMaterial)
+                            .mask {
+                                LinearGradient(
+                                    stops: [
+                                        .init(color: .black, location: 0.0),
+                                        .init(color: .black, location: 0.65),
+                                        .init(color: .black.opacity(0.7), location: 0.82),
+                                        .init(color: .black.opacity(0.25), location: 0.94),
+                                        .init(color: .clear, location: 1.0)
+                                    ],
+                                    startPoint: .top,
+                                    endPoint: .bottom
+                                )
+                            }
+                            .ignoresSafeArea(edges: .top)
+                    }
+                    // 👇 Measure header height for haptic zone calculation
+                    .background(
+                        GeometryReader { geo in
+                            Color.clear
+                                .preference(key: HeaderHeightKey.self, value: geo.size.height)
+                        }
+                    )
                     .zIndex(1)
                 }
                 .frame(width: geo.size.width, height: geo.size.height)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(Color.white.ignoresSafeArea())
                 .toolbar(.hidden, for: .navigationBar)
+                // 👇 Listen to card positions and trigger haptics
+                .onPreferenceChange(CardMidYKey.self) { cardPositions in
+                    handleCardPositions(cardPositions, in: geo)
+                }
+                .onPreferenceChange(HeaderHeightKey.self) { height in
+                    headerHeight = height
+                }
             }
         }
-        // FETCH DATA WHEN THE VIEW LOADS
         .task {
-            // Only fetch if empty to prevent unnecessary database calls every time the view appears
-            if eventManager.events.isEmpty {
-                await eventManager.loadEvents()
-            }
+            await eventManager.loadEvents()
+            await eventManager.loadSavedEvents(for: authManager.userID)
+            await eventManager.loadJoinedEvents(for: authManager.userID)
         }
     }
+    
+    // MARK: - Haptic Handling
+    private func handleCardPositions(_ positions: [String: CGFloat], in geo: GeometryProxy) {
+        // Visible center Y (below the header)
+        let visibleCenterY = (headerHeight + geo.size.height) / 2 + 35
+        
+        var newlyTriggeredIDs = Set<String>()
+        var idsInZone = Set<String>()
+        
+        for (id, midY) in positions {
+            let distance = abs(midY - visibleCenterY)
+            if distance < hapticTolerance {
+                idsInZone.insert(id)
+                if !triggeredCardIDs.contains(id) {
+                    newlyTriggeredIDs.insert(id)
+                }
+            }
+        }
+        
+        // Trigger haptic for newly entered cards
+        for id in newlyTriggeredIDs {
+            hapticGenerator.impactOccurred()
+        }
+        
+        // Update the set of triggered cards
+        triggeredCardIDs = idsInZone
+    }
+}
+
+#Preview {
+    ExperienceListView()
+        .environmentObject(EventManager())
+        .environmentObject(AuthManager())
 }
