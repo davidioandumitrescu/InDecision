@@ -269,7 +269,7 @@ struct ProfileView: View {
     
 
     // Theme Colors matching the mockup
-    private let bgTeal = Color.teal
+    private let bgTeal = Color.mint
     private let accentGreen = Color.green
     private let btnPurple = Color(red: 0.45, green: 0.35, blue: 0.95)
     
@@ -387,7 +387,7 @@ struct ProfileView: View {
                     selection: $selectedItem,
                     matching: .images
                 ) {
-                    AvatarView(userID: authManager.userID)
+                    AvatarView(userID: authManager.userID, size: 100)
                 }
                 .disabled(isUploadingAvatar)
 
