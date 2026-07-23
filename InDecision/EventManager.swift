@@ -26,6 +26,17 @@ class EventManager: ObservableObject {
     
     // MARK: - Load Events
     
+    init(){
+        Task{
+            await loadEvents()
+        }
+    }
+    
+    func loadUserSpecificData(userID: UUID?) async {
+            await loadSavedEvents(for: userID)
+            await loadJoinedEvents(for: userID)
+        }
+    
     func loadEvents() async {
         do {
             var fetchedEvents: [DetailedEvent] = try await SupabaseManager.shared.client

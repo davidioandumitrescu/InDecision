@@ -81,7 +81,7 @@ struct DetailedEvent: Identifiable, Codable {
 
     private var formattedDaysString: String {
         if selectedDays.isEmpty {
-            return "anytime"
+            return "any day"
         }
 
         if selectedDays.count == 1 {
@@ -93,7 +93,7 @@ struct DetailedEvent: Identifiable, Codable {
         }
 
         guard let lastDay = selectedDays.last else {
-            return "anytime"
+            return "any day"
         }
 
         let allButLast = selectedDays
@@ -108,6 +108,7 @@ struct DetailedEvent: Identifiable, Codable {
         formatter.dateFormat = "h:mm a"
 
         return formatter.string(from: time)
+
 
 //     private var formattedDaysString: String {
 //         if selectedDays.isEmpty { return "any day!" }

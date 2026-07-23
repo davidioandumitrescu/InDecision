@@ -90,6 +90,7 @@ struct InDecisionApp: App {
             .environmentObject(voiceManager)
             .task {
                 await authManager.refreshSession()
+                await eventManager.loadUserSpecificData(userID: authManager.userID)
                 await voiceManager.fetchRandomSoundForSession()
             }
             .onOpenURL { url in
