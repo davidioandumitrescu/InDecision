@@ -91,6 +91,10 @@ struct DetailedEvent: Identifiable, Codable {
         if selectedDays.count == 2 {
             return "\(selectedDays[0]) or \(selectedDays[1])"
         }
+        
+        if selectedDays.count > 6 {
+            return "any day"
+        }
 
         guard let lastDay = selectedDays.last else {
             return "any day"
