@@ -11,8 +11,8 @@ struct SignInView: View {
     @EnvironmentObject var authManager: AuthManager
 
     // Theme Colors matching the rest of the app
-    private let bgTeal = Color.mint
-    private let accentGreen = Color(red: 0.20, green: 0.80, blue: 0.35)
+    private let bgTeal = Color("AppSurface")
+    private let accentGreen = Color("AccentColor")
 
     var body: some View {
         ZStack {

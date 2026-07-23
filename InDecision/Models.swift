@@ -81,7 +81,7 @@ struct DetailedEvent: Identifiable, Codable {
 
     private var formattedDaysString: String {
         if selectedDays.isEmpty {
-            return "anytime"
+            return "any day"
         }
 
         if selectedDays.count == 1 {
@@ -91,9 +91,13 @@ struct DetailedEvent: Identifiable, Codable {
         if selectedDays.count == 2 {
             return "\(selectedDays[0]) or \(selectedDays[1])"
         }
+        
+        if selectedDays.count > 6 {
+            return "any day"
+        }
 
         guard let lastDay = selectedDays.last else {
-            return "anytime"
+            return "any day"
         }
 
         let allButLast = selectedDays

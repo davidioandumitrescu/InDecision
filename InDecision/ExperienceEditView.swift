@@ -36,8 +36,8 @@ struct ExperienceEditView: View {
         _time = State(initialValue: event.time)
     }
     
-    private let bgOrange = Color(red: 0.98, green: 0.55, blue: 0.15)
-    private let accentCyan = Color(red: 0.10, green: 0.85, blue: 0.90)
+    private let bgOrange = Color("ColorOrange")
+    private let accentCyan = Color("AppPrimary")
 
     var body: some View {
         NavigationStack {
