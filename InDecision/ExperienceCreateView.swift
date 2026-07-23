@@ -248,13 +248,7 @@ struct ExperienceCreateView: View {
             
             Spacer()
             
-            NavigationLink(destination: ProfileDestinationView()) {
-                Image(systemName: "person.crop.circle.fill")
-                    .font(.system(size: 44))
-                    .foregroundColor(.white)
-                    .background(Color.white.opacity(0.2))
-                    .clipShape(Circle())
-            }
+            
         }
         .padding(.horizontal, 24)
         .padding(.top, 16)

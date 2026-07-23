@@ -174,7 +174,7 @@ struct ExperienceDetailView: View {
             
             // 2. The Profile Button
             NavigationLink(destination: ProfileDestinationView()) {
-                AvatarView(userID: authManager.userID)
+                AvatarView(userID: authManager.userID,size: 50)
             }
         }
         .padding(.top, 10)

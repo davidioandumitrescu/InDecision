@@ -425,7 +425,7 @@ struct ExperienceListView: View {
                             } else {
                                 // MARK: Collapsed state — brand + icon buttons
                                 HStack {
-                                    HStack(spacing: 8) {
+                                    HStack(spacing: 0) {
                                         Image("BloopLogo-Sml")
                                     
                                     }

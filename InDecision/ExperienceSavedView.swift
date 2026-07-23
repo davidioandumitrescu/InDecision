@@ -81,7 +81,7 @@ struct ExperienceSavedView: View {
         }
     }
     
-    // MARK: - Subsections
+    // MARK: - Subsectionsß
     
     private var headerBar: some View {
         HStack {
@@ -92,7 +92,7 @@ struct ExperienceSavedView: View {
             Spacer()
             
             NavigationLink(destination: ProfileDestinationView()) {
-                AvatarView(userID: authManager.userID)
+                AvatarView(userID: authManager.userID, size: 50)
             }
         }
         .padding(.top, 16)
