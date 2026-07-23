@@ -292,7 +292,9 @@ struct ExperienceListView: View {
     
     let experienceTypes = ["All", "Teach", "Demonstrate", "StoryTell", "Build", "Mentor", "Explore", "Discuss", "Practice"]
     
-    let palette: [Color] = [.mint, .green, .yellow, .orange]
+    var palette: [Color] {
+        [Color("AppSurface"), Color("ColorGreen"), Color("ColorYellow"), Color("ColorOrange")]
+    }
     let stepCount = 3
     let stepHeight: CGFloat = 30
 
@@ -416,7 +418,7 @@ struct ExperienceListView: View {
                             }
                             
                             NavigationLink(destination: ProfileDestinationView()) {
-                                AvatarView(userID: authManager.userID)
+                                AvatarView(userID: authManager.userID, size: 50)
                             }
                         }
                         .padding(.horizontal)
@@ -499,11 +501,11 @@ struct ExperienceListView: View {
                 }
             }
         }
-        .task {
-            await eventManager.loadEvents()
-            await eventManager.loadSavedEvents(for: authManager.userID)
-            await eventManager.loadJoinedEvents(for: authManager.userID)
-        }
+//        .task {
+//            await eventManager.loadEvents()
+//            await eventManager.loadSavedEvents(for: authManager.userID)
+//            await eventManager.loadJoinedEvents(for: authManager.userID)
+//        }
     }
     
     // MARK: - Haptic Handling

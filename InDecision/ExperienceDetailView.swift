@@ -33,7 +33,7 @@ struct ExperienceDetailView: View {
     var nextColor: Color
     
     // Theme Constants
-    private let buttonPurple = Color(red: 0.45, green: 0.35, blue: 0.95)
+    private let buttonPurple = Color("AppPrimary")
     
     var isJoined: Bool {
         eventManager.joinedEventIDs.contains(event.id)
@@ -386,8 +386,8 @@ struct ProfileCardSheet: View {
     let info: AttendeeCardInfo
     
     // Theme Colors
-    private let bgTeal = Color.mint
-    private let btnPurple = Color(red: 0.50, green: 0.35, blue: 0.96)
+    private let bgTeal = Color("AppSurface")
+    private let btnPurple = Color("AppPrimary")
     
     var body: some View {
         VStack(spacing: 20) {

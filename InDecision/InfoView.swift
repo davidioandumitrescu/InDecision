@@ -4,8 +4,8 @@ struct InfoView: View {
     @Environment(\.dismiss) var dismiss
     
     // Theme Colors matching the rest of the app
-    private let bgTeal = Color.mint
-    private let accentGreen = Color(red: 0.20, green: 0.80, blue: 0.35)
+    private let bgTeal = Color("AppSurface")
+    private let accentGreen = Color("ColorGreen")
     
     var body: some View {
         ZStack {
@@ -32,9 +32,9 @@ struct InfoView: View {
                         Button(action: { dismiss() }) {
                             Image(systemName: "chevron.left")
                                 .font(.system(size: 18, weight: .bold))
-                                .foregroundColor(.black)
+                                .foregroundColor(.primary) // 👈 Changed from .black
                                 .frame(width: 44, height: 44)
-                                .background(Color.white.opacity(0.9))
+                                .background(Color(uiColor: .systemBackground).opacity(0.9)) // 👈 Changed from .white
                                 .clipShape(Circle())
                                 .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
                         }
@@ -43,7 +43,7 @@ struct InfoView: View {
                          
                         Text("About Bloop")
                             .font(.system(size: 22, weight: .bold))
-                            .foregroundColor(.white)
+                            .foregroundColor(.white) // Assuming bgTeal is dark enough in both modes
                          
                         Spacer()
                          
@@ -57,7 +57,7 @@ struct InfoView: View {
                     VStack(spacing: 12) {
                         Text("Welcome to Bloop 👋")
                             .font(.title3.bold())
-                            .foregroundColor(.black)
+                            .foregroundColor(.primary) // 👈 Changed from .black
                      
                         Text("An app where you can try new things and meet new people!")
                             .font(.body)
@@ -66,7 +66,7 @@ struct InfoView: View {
                     }
                     .padding(20)
                     .frame(maxWidth: .infinity)
-                    .background(Color.white.opacity(0.95))
+                    .background(Color(uiColor: .secondarySystemBackground)) // 👈 Adaptive background
                     .cornerRadius(20)
                     .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
                     .padding(.horizontal, 24)
@@ -80,7 +80,7 @@ struct InfoView: View {
                           
                             Text("Whether you have a **solid event** in mind with a set date, time and location.")
                                 .font(.subheadline)
-                                .foregroundColor(.black.opacity(0.8))
+                                .foregroundColor(.primary.opacity(0.8)) // 👈 Changed from .black
                         }
                           
                         HStack(alignment: .top, spacing: 12) {
@@ -91,7 +91,7 @@ struct InfoView: View {
                           
                             Text("Or if you just have an **idea**!")
                                 .font(.subheadline)
-                                .foregroundColor(.black.opacity(0.8))
+                                .foregroundColor(.primary.opacity(0.8)) // 👈 Changed from .black
                         }
                           
                         Divider()
@@ -99,12 +99,12 @@ struct InfoView: View {
                         Text("Bloop helps you find people to connect with.")
                             .font(.subheadline)
                             .bold()
-                            .foregroundColor(.black)
+                            .foregroundColor(.primary) // 👈 Changed from .black
                             .frame(maxWidth: .infinity, alignment: .center)
                     }
                     .padding(20)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Color.white.opacity(0.95))
+                    .background(Color(uiColor: .secondarySystemBackground)) // 👈 Adaptive background
                     .cornerRadius(20)
                     .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
                     .padding(.horizontal, 24)
@@ -112,7 +112,7 @@ struct InfoView: View {
                     VStack(alignment: .leading, spacing: 16) {
                         Text("Try creating a proposal")
                             .font(.headline)
-                            .foregroundColor(.black)
+                            .foregroundColor(.primary) // 👈 Changed from .black
                           
                         Text("You don’t need to finalize your event just yet! Simply create a proposal of something you would like to try:")
                             .font(.subheadline)
@@ -132,7 +132,7 @@ struct InfoView: View {
                     }
                     .padding(20)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Color.white.opacity(0.95))
+                    .background(Color(uiColor: .secondarySystemBackground)) // 👈 Adaptive background
                     .cornerRadius(20)
                     .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
                     .padding(.horizontal, 24)
@@ -143,7 +143,6 @@ struct InfoView: View {
                             .font(.subheadline)
                             .multilineTextAlignment(.center)
                             .foregroundColor(.white.opacity(0.9))
-                            .padding(.horizontal, 32)
                           
                         Text("Have fun,\n**InDecision**")
                             .font(.callout)
@@ -173,7 +172,7 @@ struct InfoView: View {
                 Text(text)
                     .font(.subheadline)
                     .bold()
-                    .foregroundColor(.black.opacity(0.8))
+                    .foregroundColor(.primary.opacity(0.8)) // 👈 Changed from .black
             }
         }
     }
