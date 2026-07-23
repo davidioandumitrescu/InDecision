@@ -290,6 +290,13 @@ struct ExperienceListView: View {
     @State private var selectedFilter = 0
     @State private var selectedTypes: Set<String> = []
     
+    // MARK: - Search expand/collapse state
+    @State private var isSearchExpanded = false
+    @FocusState private var isSearchFieldFocused: Bool
+    
+    // Change this to whatever you'd like displayed as the app's wordmark.
+    private let appName = "Bloop_"
+    
     let experienceTypes = ["All", "Teach", "Demonstrate", "StoryTell", "Build", "Mentor", "Explore", "Discuss", "Practice"]
     
     var palette: [Color] {
@@ -370,55 +377,120 @@ struct ExperienceListView: View {
                     // MARK: - PINNED HEADER
                     VStack(spacing: 16) {
                         
-                        // Search Bar & Profile Button
+                        // App Name / Search Bar & Profile Button
                         HStack(spacing: 12) {
-                            HStack(spacing: 12) {
-                                Image(systemName: "magnifyingglass").foregroundColor(.gray).font(.system(size: 20))
-                                TextField("Explore", text: $searchText).font(.system(size: 18))
-                                Image(systemName: "mic").foregroundColor(.gray).font(.system(size: 20))
-                            }
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 12)
-                            .background(Color.white.opacity(0.9))
-                            .clipShape(Capsule())
-                            .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
-                            
-                            Menu {
-                                ForEach(experienceTypes, id: \.self) { type in
-                                    Toggle(
-                                        type,
-                                        isOn: Binding(
-                                            get: {
-                                                type == "All"
-                                                    ? selectedTypes.isEmpty
-                                                    : selectedTypes.contains(type)
-                                            },
-                                            set: { isSelected in
-                                                if type == "All" {
-                                                    if isSelected {
-                                                        selectedTypes.removeAll()
-                                                    }
-                                                } else if isSelected {
-                                                    selectedTypes.insert(type)
-                                                } else {
-                                                    selectedTypes.remove(type)
-                                                }
-                                            }
-                                        )
-                                    )
+                            if isSearchExpanded {
+                                // MARK: Expanded search bar
+                                HStack(spacing: 12) {
+                                    Image(systemName: "magnifyingglass")
+                                        .foregroundColor(.gray)
+                                        .font(.system(size: 20))
+                                    TextField("Explore", text: $searchText)
+                                        .font(.system(size: 18))
+                                        .focused($isSearchFieldFocused)
+                                        .submitLabel(.search)
+                                    
+                                    if !searchText.isEmpty {
+                                        Button {
+                                            searchText = ""
+                                        } label: {
+                                            Image(systemName: "xmark.circle.fill")
+                                                .foregroundColor(.gray)
+                                        }
+                                    } else {
+                                        Image(systemName: "mic")
+                                            .foregroundColor(.gray)
+                                            .font(.system(size: 20))
+                                    }
                                 }
-                            } label: {
-                                Image(systemName: "line.3.horizontal.decrease")
-                                    .font(.system(size: 20, weight: .medium))
-                                    .foregroundColor(.black)
-                                    .frame(width: 50, height: 50)
-                                    .background(Color.white.opacity(0.9))
-                                    .clipShape(Circle())
-                                    .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
-                            }
-                            
-                            NavigationLink(destination: ProfileDestinationView()) {
-                                AvatarView(userID: authManager.userID, size: 50)
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 12)
+                                .background(Color.white.opacity(0.9))
+                                .clipShape(Capsule())
+                                .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
+                                .transition(.asymmetric(
+                                    insertion: .move(edge: .leading).combined(with: .opacity),
+                                    removal: .opacity
+                                ))
+                                
+                                Button {
+                                    collapseSearch()
+                                } label: {
+                                    Text("Cancel")
+                                        .font(.system(size: 16, weight: .medium))
+                                        .foregroundColor(.black.opacity(0.75))
+                                }
+                                .transition(.opacity)
+                                
+                            } else {
+                                // MARK: Collapsed state — brand + icon buttons
+                                HStack {
+                                    HStack(spacing: 8) {
+                                        Image("BloopLogo-Sml")
+                                    
+                                    }
+                                    .foregroundColor(.white)
+                                    
+                                    Spacer()
+                                }
+                                
+                                    
+                                
+                                
+                                Spacer()
+                                
+                                Button {
+                                    expandSearch()
+                                } label: {
+                                    Image(systemName: "magnifyingglass")
+                                        .font(.system(size: 20, weight: .medium))
+                                        .foregroundColor(.black)
+                                        .frame(width: 50, height: 50)
+                                        .background(Color.white.opacity(0.9))
+                                        .clipShape(Circle())
+                                        .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
+                                }
+                                .transition(.opacity)
+                                
+                                Menu {
+                                    ForEach(experienceTypes, id: \.self) { type in
+                                        Toggle(
+                                            type,
+                                            isOn: Binding(
+                                                get: {
+                                                    type == "All"
+                                                        ? selectedTypes.isEmpty
+                                                        : selectedTypes.contains(type)
+                                                },
+                                                set: { isSelected in
+                                                    if type == "All" {
+                                                        if isSelected {
+                                                            selectedTypes.removeAll()
+                                                        }
+                                                    } else if isSelected {
+                                                        selectedTypes.insert(type)
+                                                    } else {
+                                                        selectedTypes.remove(type)
+                                                    }
+                                                }
+                                            )
+                                        )
+                                    }
+                                } label: {
+                                    Image(systemName: "line.3.horizontal.decrease")
+                                        .font(.system(size: 20, weight: .medium))
+                                        .foregroundColor(.black)
+                                        .frame(width: 50, height: 50)
+                                        .background(Color.white.opacity(0.9))
+                                        .clipShape(Circle())
+                                        .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
+                                }
+                                .transition(.opacity)
+                                
+                                NavigationLink(destination: ProfileDestinationView()) {
+                                    AvatarView(userID: authManager.userID, size: 50)
+                                }
+                                .transition(.opacity)
                             }
                         }
                         .padding(.horizontal)
@@ -506,6 +578,26 @@ struct ExperienceListView: View {
 //            await eventManager.loadSavedEvents(for: authManager.userID)
 //            await eventManager.loadJoinedEvents(for: authManager.userID)
 //        }
+    }
+    
+    // MARK: - Search expand/collapse helpers
+    private func expandSearch() {
+        withAnimation(.easeInOut(duration: 0.25)) {
+            isSearchExpanded = true
+        }
+        // Give the transition a beat to start before pulling up the keyboard,
+        // otherwise the keyboard animation and the layout animation fight each other.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+            isSearchFieldFocused = true
+        }
+    }
+    
+    private func collapseSearch() {
+        isSearchFieldFocused = false
+        withAnimation(.easeInOut(duration: 0.25)) {
+            isSearchExpanded = false
+        }
+        searchText = ""
     }
     
     // MARK: - Haptic Handling
