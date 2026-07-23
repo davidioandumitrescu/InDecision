@@ -12,7 +12,7 @@ struct SignInView: View {
 
     // Theme Colors matching the rest of the app
     private let bgTeal = Color("AppSurface")
-    private let accentGreen = Color("ColorGreen")
+    private let accentGreen = Color("AccentColor")
 
     var body: some View {
         ZStack {

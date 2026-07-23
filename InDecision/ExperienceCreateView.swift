@@ -37,7 +37,7 @@ struct ExperienceCreateView: View {
     
     // MARK: - Theme Colors
     private let bgOrange = Color("ColorOrange")
-    private let accentCyan = Color("AppSurface")
+    private let accentCyan = Color("AccentColor")
     
     // MARK: - Image State
     
