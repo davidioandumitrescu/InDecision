@@ -374,68 +374,17 @@ struct ExperienceListView: View {
                     .background(palette.first?.ignoresSafeArea())
                     .ignoresSafeArea(edges: .top)
                     
-                    // MARK: - PINNED HEADER
+                    // MARK: - PINNED HEADER (FIXED ANIMATION)
                     VStack(spacing: 16) {
                         
-                        // App Name / Search Bar & Profile Button
-                        HStack(spacing: 12) {
-                            if isSearchExpanded {
-                                // MARK: Expanded search bar
-                                HStack(spacing: 12) {
-                                    Image(systemName: "magnifyingglass")
-                                        .foregroundColor(.gray)
-                                        .font(.system(size: 20))
-                                    TextField("Explore", text: $searchText)
-                                        .font(.system(size: 18))
-                                        .focused($isSearchFieldFocused)
-                                        .submitLabel(.search)
-                                    
-                                    if !searchText.isEmpty {
-                                        Button {
-                                            searchText = ""
-                                        } label: {
-                                            Image(systemName: "xmark.circle.fill")
-                                                .foregroundColor(.gray)
-                                        }
-                                    } else {
-                                        Image(systemName: "mic")
-                                            .foregroundColor(.gray)
-                                            .font(.system(size: 20))
-                                    }
+                        // Header row: both collapsed and expanded states coexist in a ZStack
+                        ZStack {
+                            // --- Collapsed state ---
+                            HStack {
+                                HStack(spacing: 0) {
+                                    Image("BloopLogo-Sml")
                                 }
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 12)
-                                .background(Color.white.opacity(0.9))
-                                .clipShape(Capsule())
-                                .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
-                                .transition(.asymmetric(
-                                    insertion: .move(edge: .leading).combined(with: .opacity),
-                                    removal: .opacity
-                                ))
-                                
-                                Button {
-                                    collapseSearch()
-                                } label: {
-                                    Text("Cancel")
-                                        .font(.system(size: 16, weight: .medium))
-                                        .foregroundColor(.black.opacity(0.75))
-                                }
-                                .transition(.opacity)
-                                
-                            } else {
-                                // MARK: Collapsed state — brand + icon buttons
-                                HStack {
-                                    HStack(spacing: 0) {
-                                        Image("BloopLogo-Sml")
-                                    
-                                    }
-                                    .foregroundColor(.white)
-                                    
-                                    Spacer()
-                                }
-                                
-                                    
-                                
+                                .foregroundColor(.white)
                                 
                                 Spacer()
                                 
@@ -450,7 +399,6 @@ struct ExperienceListView: View {
                                         .clipShape(Circle())
                                         .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
                                 }
-                                .transition(.opacity)
                                 
                                 Menu {
                                     ForEach(experienceTypes, id: \.self) { type in
@@ -485,13 +433,55 @@ struct ExperienceListView: View {
                                         .clipShape(Circle())
                                         .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
                                 }
-                                .transition(.opacity)
                                 
                                 NavigationLink(destination: ProfileDestinationView()) {
                                     AvatarView(userID: authManager.userID, size: 50)
                                 }
-                                .transition(.opacity)
                             }
+                            .opacity(isSearchExpanded ? 0 : 1)
+                            .animation(.easeInOut(duration: 0.25), value: isSearchExpanded)
+                            
+                            // --- Expanded state ---
+                            HStack(spacing: 12) {
+                                HStack(spacing: 12) {
+                                    Image(systemName: "magnifyingglass")
+                                        .foregroundColor(.gray)
+                                        .font(.system(size: 20))
+                                    TextField("Explore", text: $searchText)
+                                        .font(.system(size: 18))
+                                        .focused($isSearchFieldFocused)
+                                        .submitLabel(.search)
+                                    
+                                    if !searchText.isEmpty {
+                                        Button {
+                                            searchText = ""
+                                        } label: {
+                                            Image(systemName: "xmark.circle.fill")
+                                                .foregroundColor(.gray)
+                                        }
+                                    } else {
+                                        Image(systemName: "mic")
+                                            .foregroundColor(.gray)
+                                            .font(.system(size: 20))
+                                    }
+                                }
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 12)
+                                .background(Color.white.opacity(0.9))
+                                .clipShape(Capsule())
+                                .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
+                                .frame(maxWidth: .infinity)
+                                
+                                Button {
+                                    collapseSearch()
+                                } label: {
+                                    Text("Cancel")
+                                        .font(.system(size: 16, weight: .medium))
+                                        .foregroundColor(.black.opacity(0.75))
+                                }
+                            }
+                            .opacity(isSearchExpanded ? 1 : 0)
+                            .animation(.easeInOut(duration: 0.25), value: isSearchExpanded)
                         }
                         .padding(.horizontal)
                         
@@ -582,21 +572,17 @@ struct ExperienceListView: View {
     
     // MARK: - Search expand/collapse helpers
     private func expandSearch() {
-        withAnimation(.easeInOut(duration: 0.25)) {
-            isSearchExpanded = true
-        }
-        // Give the transition a beat to start before pulling up the keyboard,
-        // otherwise the keyboard animation and the layout animation fight each other.
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+        isSearchExpanded = true
+        // Wait for the crossfade to finish (0.25s) + a small buffer before showing the keyboard
+        // This eliminates the first‑open stutter by letting the layout settle.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
             isSearchFieldFocused = true
         }
     }
     
     private func collapseSearch() {
         isSearchFieldFocused = false
-        withAnimation(.easeInOut(duration: 0.25)) {
-            isSearchExpanded = false
-        }
+        isSearchExpanded = false
         searchText = ""
     }
     
